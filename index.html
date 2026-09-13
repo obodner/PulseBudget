@@ -140,6 +140,14 @@
             <span class="lab-nav-icon">🧪</span>
             <span class="lab-nav-text">מעבדה</span>
           </button>
+
+          <!-- Monthly Pulse Wrapped Button -->
+          <button id="openWrappedBtn" class="btn-pill btn-wrapped-nav" aria-label="החודש שלך ב-Pulse Wrapped"
+            title="החודש שלך ב-Pulse (Wrapped)">
+            <span class="wrapped-nav-icon">🎁</span>
+            <span class="wrapped-nav-text">Wrapped</span>
+            <span class="wrapped-sparkle-dot"></span>
+          </button>
         </div>
       </div>
 
@@ -337,6 +345,26 @@
         </div>
       </section>
     </main>
+
+    <!-- Celebratory Monthly Wrapped Banner (Phase 3) -->
+    <section id="wrappedCelebrationBanner" class="wrapped-celebration-banner" style="display: none;" aria-label="באנר סיכום חודשי Pulse Wrapped">
+      <div class="wrapped-banner-ambient"></div>
+      <div class="wrapped-banner-content">
+        <div class="wrapped-banner-badge">
+          <span class="wrapped-banner-icon">🎁</span>
+          <span class="wrapped-banner-tag">PULSE WRAPPED</span>
+        </div>
+        <div class="wrapped-banner-info">
+          <h3 id="wrappedBannerTitle" class="wrapped-banner-title">החודש שלך ב-Pulse כבר מוכן! 🚀</h3>
+          <p id="wrappedBannerSubtitle" class="wrapped-banner-sub">בוא לגלות מה עשית עם הכסף, מי מלכת הקטגוריות ואיזה תואר קיבלת.</p>
+        </div>
+        <button type="button" id="wrappedBannerActionBtn" class="btn-wrapped-banner-action">
+          <span>בוא נראה!</span>
+          <span class="banner-btn-arrow">←</span>
+        </button>
+      </div>
+      <button type="button" id="dismissWrappedBannerBtn" class="wrapped-banner-dismiss" title="סגור באנר" aria-label="סגור באנר">✕</button>
+    </section>
 
     <!-- Pulse Nuggets (Smart Insights Card - Phase 1) -->
     <section id="pulseNuggetsSection" class="pulse-nuggets-section" aria-label="תובנות בזק חכמות">
@@ -744,7 +772,12 @@
             אנליטיקה חכמה, קצב שריפה והרגלי כסף
           </div>
         </div>
-        <button id="closePulseLabBtn" class="modal-close-btn" aria-label="סגור מעבדה">✕</button>
+        <div class="lab-header-actions">
+          <button type="button" id="labToWrappedBtn" class="btn-lab-wrapped-launch" title="פתח את סיכום החודש ב-Wrapped">
+            <span>🎁 Wrapped</span>
+          </button>
+          <button id="closePulseLabBtn" class="modal-close-btn" aria-label="סגור מעבדה">✕</button>
+        </div>
       </div>
 
       <div class="pulse-lab-body">
@@ -863,6 +896,162 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Monthly Pulse Wrapped Story Modal (Phase 3) -->
+  <div id="pulseWrappedModal" class="wrapped-modal-backdrop" role="dialog" aria-modal="true" aria-label="החודש שלך ב-Pulse" style="display: none;">
+    <!-- Ambient Glowing Background Spheres -->
+    <div class="wrapped-ambient-glow glow-1"></div>
+    <div class="wrapped-ambient-glow glow-2"></div>
+    <div class="wrapped-ambient-glow glow-3"></div>
+
+    <!-- Main Story Container (Centered on desktop, edge-to-edge on mobile) -->
+    <div class="wrapped-story-card" id="wrappedStoryCard">
+      <!-- Top Progress Bars (Segmented Stories Indicators) -->
+      <div class="wrapped-progress-track" id="wrappedProgressTrack">
+        <div class="wrapped-progress-seg"><div class="wrapped-progress-fill"></div></div>
+        <div class="wrapped-progress-seg"><div class="wrapped-progress-fill"></div></div>
+        <div class="wrapped-progress-seg"><div class="wrapped-progress-fill"></div></div>
+        <div class="wrapped-progress-seg"><div class="wrapped-progress-fill"></div></div>
+        <div class="wrapped-progress-seg"><div class="wrapped-progress-fill"></div></div>
+      </div>
+
+      <!-- Story Top Bar Controls -->
+      <div class="wrapped-story-header">
+        <div class="wrapped-header-meta">
+          <span class="wrapped-brand-pill">⚡ PULSE WRAPPED</span>
+          <span id="wrappedMonthLabel" class="wrapped-month-badge">ספטמבר 2026</span>
+        </div>
+        <div class="wrapped-header-actions">
+          <!-- Sound FX Toggle Inside Story -->
+          <button type="button" id="wrappedSoundToggleBtn" class="wrapped-icon-btn" title="הפעל/השתק צלילים" aria-label="הפעל או השתק צלילים">
+            <span id="wrappedSoundIcon">🔊</span>
+          </button>
+          <!-- Close Story Button -->
+          <button type="button" id="closeWrappedBtn" class="wrapped-icon-btn close-btn" title="סגור Wrapped" aria-label="סגור סיכום חודשי">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Story Slides Wrapper -->
+      <div class="wrapped-slides-viewport" id="wrappedSlidesViewport">
+        <!-- Slide 1: The Big Picture (המספר הכולל) -->
+        <div class="wrapped-slide slide-1 active" data-slide="0">
+          <div class="slide-tag">התמונה הגדולה 🚀</div>
+          <h2 class="slide-headline">איך עבר עליך החודש?</h2>
+          <div class="slide-hero-visual">
+            <div class="pulse-ring-glow">
+              <span class="hero-emoji">💸</span>
+            </div>
+            <div class="hero-giant-number" id="wrappedTotalSpent">₪0</div>
+            <div class="hero-giant-label">סך הכל הוצאות החודש</div>
+          </div>
+          <div class="slide-stat-capsule" id="wrappedTxCountCapsule">
+            <span class="capsule-icon">📑</span>
+            <span id="wrappedTxCountText">0 תנועות נרשמו ב-Pulse</span>
+          </div>
+          <p class="slide-punchline" id="wrappedSlide1Punchline">כל שקל קיבל יחס אישי ומעקב צמוד!</p>
+        </div>
+
+        <!-- Slide 2: The Queen Category (מלכת הקטגוריות) -->
+        <div class="wrapped-slide slide-2" data-slide="1">
+          <div class="slide-tag">הכתר של החודש 👑</div>
+          <h2 class="slide-headline">מלכת הקטגוריות שלך</h2>
+          <div class="slide-hero-visual">
+            <div class="queen-crown-wrap">
+              <span class="crown-icon">👑</span>
+              <div class="queen-cat-circle" id="wrappedTopCatCircle" style="background: rgba(255, 107, 107, 0.2);">
+                <span class="queen-cat-emoji" id="wrappedTopCatEmoji">🍔</span>
+              </div>
+            </div>
+            <div class="queen-cat-name" id="wrappedTopCatName">מזון ומסעדות</div>
+            <div class="queen-cat-spend" id="wrappedTopCatSpend">₪0</div>
+          </div>
+          <div class="slide-stat-capsule queen-percent-capsule">
+            <span class="capsule-icon">📊</span>
+            <span id="wrappedTopCatPercentText">0% מכל ההוצאות שלך!</span>
+          </div>
+          <p class="slide-punchline" id="wrappedTopCatFunFact">הבטן שלך בהחלט הרגישה את ההשקעה 😉</p>
+        </div>
+
+        <!-- Slide 3: The High Roller Moment (רגע השיא של החודש) -->
+        <div class="wrapped-slide slide-3" data-slide="2">
+          <div class="slide-tag">רגע השיא 🌟</div>
+          <h2 class="slide-headline">היום שבו הרגשת מיליונר</h2>
+          <div class="slide-hero-visual">
+            <div class="high-roller-card">
+              <div class="roller-sparkles">✨</div>
+              <span class="roller-badge-label">ההוצאה היומית הגבוהה ביותר</span>
+              <div class="roller-amount" id="wrappedPeakAmount">₪0</div>
+              <div class="roller-date" id="wrappedPeakDate">חמישי, 14 לחודש</div>
+            </div>
+          </div>
+          <div class="slide-stat-capsule">
+            <span class="capsule-icon">🎉</span>
+            <span>היום הכי עוצמתי שלך החודש</span>
+          </div>
+          <p class="slide-punchline" id="wrappedPeakFunFact">יום אחד, מלא פינוקים. לפעמים פשוט מגיע לך!</p>
+        </div>
+
+        <!-- Slide 4: Budget Discipline & Surplus (מדד השליטה) -->
+        <div class="wrapped-slide slide-4" data-slide="3">
+          <div class="slide-tag">מדד השליטה 🛡️</div>
+          <h2 class="slide-headline">איך עמדת מול היעדים?</h2>
+          <div class="slide-hero-visual">
+            <div class="discipline-meter-box" id="wrappedDisciplineBox">
+              <div class="discipline-badge-icon" id="wrappedDisciplineIcon">🏆</div>
+              <div class="discipline-status-title" id="wrappedDisciplineTitle">שליטה מנצחת!</div>
+              <div class="discipline-metric-diff" id="wrappedDisciplineMetric">+₪0</div>
+              <div class="discipline-sub" id="wrappedDisciplineSub">עודף מתחת לתקרה שהגדרת</div>
+            </div>
+          </div>
+          <div class="slide-stat-capsule" id="wrappedSavingsCapsule">
+            <span class="capsule-icon">💎</span>
+            <span id="wrappedSavingsRateText">שיעור חיסכון מצוין מההכנסות</span>
+          </div>
+          <p class="slide-punchline" id="wrappedDisciplineFunFact">משמעת חכמה שמשאירה לך יותר בכיס.</p>
+        </div>
+
+        <!-- Slide 5: Persona Badge & Grand Finale (תואר החודש האישי) -->
+        <div class="wrapped-slide slide-5" data-slide="4">
+          <div class="slide-tag">הכרטיס שלך 🏆</div>
+          <h2 class="slide-headline">תואר החודש הרשמי שלך</h2>
+          <div class="slide-hero-visual">
+            <div class="persona-trophy-card" id="wrappedPersonaCard">
+              <div class="persona-glow-aura"></div>
+              <div class="persona-emoji-bubble" id="wrappedPersonaEmoji">👑</div>
+              <div class="persona-title" id="wrappedPersonaTitle">מאסטר השליטה</div>
+              <div class="persona-subtitle" id="wrappedPersonaSubtitle">עמידה מושלמת בכל היעדים</div>
+              <div class="persona-divider"></div>
+              <p class="persona-desc" id="wrappedPersonaDesc">לא נתת לאף תקרה לחמוק ממך. סגרת את החודש כמו מנכ"ל תקציב מנוסה.</p>
+              <div class="persona-tagline" id="wrappedPersonaTagline">"התקציב עובד בשבילך, לא אתה בשבילו."</div>
+            </div>
+          </div>
+          
+          <!-- Final Slide Actions -->
+          <div class="wrapped-finale-actions">
+            <button type="button" id="wrappedShareBtn" class="btn-wrapped-primary">
+              <span>שתף את התואר</span>
+              <span class="btn-icon">📲</span>
+            </button>
+            <button type="button" id="wrappedReplayBtn" class="btn-wrapped-secondary" title="צפה ב-Wrapped מההתחלה">
+              <span>שוב מההתחלה</span>
+              <span class="btn-icon">🔄</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Tap Navigation Zones (Left & Right for RTL navigation) -->
+      <div class="wrapped-nav-zone left-zone" id="wrappedNavPrev" title="שקופית קודמת" aria-label="שקופית קודמת"></div>
+      <div class="wrapped-nav-zone right-zone" id="wrappedNavNext" title="שקופית הבאה" aria-label="שקופית הבאה"></div>
+
+      <!-- Bottom Footer Hints -->
+      <div class="wrapped-story-footer">
+        <span class="wrapped-touch-hint">הקש בצדדים למעבר • לחיצה ארוכה להשהיה</span>
       </div>
     </div>
   </div>

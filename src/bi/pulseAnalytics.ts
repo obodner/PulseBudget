@@ -493,3 +493,263 @@ export function computePulseLabMetrics(
   };
 }
 
+// ==========================================================================
+// Phase 3: Monthly Pulse Wrapped (החודש שלך ב-Pulse)
+// ==========================================================================
+
+export interface MonthlyWrappedData {
+  monthKey: string; // YYYY-MM
+  monthName: string; // e.g. "ספטמבר 2026"
+  isCurrentMonth: boolean;
+  totalSpent: number;
+  totalIncome: number;
+  transactionCount: number;
+  expenseCount: number;
+  topCategory: {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+    amount: number;
+    percent: number;
+    funFact: string;
+  } | null;
+  peakDay: {
+    dateStr: string;
+    dayFormatted: string; // e.g. "יום חמישי, 14 בספטמבר"
+    amount: number;
+    funFact: string;
+  } | null;
+  budgetStatus: {
+    monthlyCap: number;
+    surplusOrDeficit: number;
+    isWithinCap: boolean;
+    savingsRate: number;
+    funFact: string;
+  };
+  persona: {
+    title: string;
+    badgeEmoji: string;
+    subtitle: string;
+    description: string;
+    tagline: string;
+  };
+}
+
+export function computeMonthlyWrappedData(
+  transactions: Transaction[],
+  caps: BudgetCaps,
+  targetMonthKey?: string
+): MonthlyWrappedData {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-indexed
+
+  // Format month key helper
+  const toKey = (y: number, m: number) => `${y}-${String(m + 1).padStart(2, '0')}`;
+  const currMonthKey = toKey(currentYear, currentMonth);
+
+  // Determine previous month
+  const prevDate = new Date(currentYear, currentMonth - 1, 1);
+  const prevMonthKey = toKey(prevDate.getFullYear(), prevDate.getMonth());
+
+  let chosenMonthKey = targetMonthKey;
+  if (!chosenMonthKey) {
+    // Check if we have transactions in previous month
+    const hasPrevData = transactions.some(t => t.date && t.date.startsWith(prevMonthKey));
+    if (hasPrevData) {
+      chosenMonthKey = prevMonthKey;
+    } else {
+      chosenMonthKey = currMonthKey;
+    }
+  }
+
+  const [selYearStr, selMonthStr] = chosenMonthKey.split('-');
+  const selYear = parseInt(selYearStr, 10);
+  const selMonthIndex = parseInt(selMonthStr, 10) - 1;
+  const isCurrentMonth = chosenMonthKey === currMonthKey;
+
+  const dateObj = new Date(selYear, selMonthIndex, 1);
+  const monthName = dateObj.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+
+  // Filter transactions for this month
+  const monthTxs = transactions.filter(t => t.date && t.date.startsWith(chosenMonthKey!));
+  const expenseTxs = monthTxs.filter(t => t.type === 'expense');
+  const incomeTxs = monthTxs.filter(t => t.type === 'income');
+
+  const totalSpent = Math.round(expenseTxs.reduce((s, t) => s + t.amount, 0));
+  const totalIncome = Math.round(incomeTxs.reduce((s, t) => s + t.amount, 0));
+  const transactionCount = monthTxs.length;
+  const expenseCount = expenseTxs.length;
+
+  // 1. Top Category
+  const catMap: Record<string, number> = {};
+  expenseTxs.forEach(t => {
+    catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+  });
+
+  let topCatId = '';
+  let topCatAmount = 0;
+  Object.entries(catMap).forEach(([id, amt]) => {
+    if (amt > topCatAmount) {
+      topCatAmount = amt;
+      topCatId = id;
+    }
+  });
+
+  let topCategory: MonthlyWrappedData['topCategory'] = null;
+  if (topCatId && topCatAmount > 0) {
+    const catInfo = getCategoryById(topCatId);
+    const percent = totalSpent > 0 ? Math.round((topCatAmount / totalSpent) * 100) : 0;
+    let funFact = `לקחה ${percent}% מכל ההוצאות החודשיות שלך.`;
+    if (percent >= 45) {
+      funFact = `שליטה כמעט מוחלטת! ${percent}% מכל מה שהוצאת החודש הלך לכאן 👑`;
+    } else if (topCatId === 'food' || topCatId === 'groceries') {
+      funFact = `הבטן שלך בהחלט הרגישה את ההשקעה והפינוקים החודש 🍔`;
+    } else if (topCatId === 'entertainment' || topCatId === 'shopping') {
+      funFact = `החיים הטובים במיטבם — כיף להתפנק וליהנות מהרגע 🛍️`;
+    }
+
+    topCategory = {
+      id: topCatId,
+      name: catInfo.name,
+      icon: catInfo.icon,
+      color: catInfo.color,
+      amount: Math.round(topCatAmount),
+      percent,
+      funFact
+    };
+  }
+
+  // 2. Peak Spend Day
+  const dailySpendMap: Record<string, number> = {};
+  expenseTxs.forEach(t => {
+    const dStr = t.date.split('T')[0];
+    dailySpendMap[dStr] = (dailySpendMap[dStr] || 0) + t.amount;
+  });
+
+  let peakDayStr = '';
+  let peakDayAmount = 0;
+  Object.entries(dailySpendMap).forEach(([dStr, amt]) => {
+    if (amt > peakDayAmount) {
+      peakDayAmount = amt;
+      peakDayStr = dStr;
+    }
+  });
+
+  let peakDay: MonthlyWrappedData['peakDay'] = null;
+  if (peakDayStr && peakDayAmount > 0) {
+    const pDate = new Date(peakDayStr);
+    const dayFormatted = pDate.toLocaleDateString('he-IL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+
+    let funFact = `ביום הזה הרגשת מיליונר עם ₪${Math.round(peakDayAmount).toLocaleString()} ביום אחד 🎉`;
+    if (peakDayAmount >= 500) {
+      funFact = `רגע השיא של החודש! הוצאת ₪${Math.round(peakDayAmount).toLocaleString()} ביום אחד — לפעמים מגיע להתפנק! 🚀`;
+    }
+
+    peakDay = {
+      dateStr: peakDayStr,
+      dayFormatted,
+      amount: Math.round(peakDayAmount),
+      funFact
+    };
+  }
+
+  // 3. Budget Status & Discipline
+  const monthlyCap = caps.monthly || 0;
+  const surplusOrDeficit = monthlyCap > 0 ? monthlyCap - totalSpent : 0;
+  const isWithinCap = monthlyCap > 0 ? totalSpent <= monthlyCap : true;
+  const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalSpent) / totalIncome) * 100)) : 0;
+
+  let budgetFunFact = 'המשך לעקוב אחרי הדופק הפיננסי שלך!';
+  if (monthlyCap > 0) {
+    if (isWithinCap) {
+      budgetFunFact = `סיימת עם ₪${Math.round(surplusOrDeficit).toLocaleString()} עודף בכיס מתחת לתקרה שהגדרת! 🏆`;
+    } else {
+      budgetFunFact = `חרגת ב-₪${Math.round(Math.abs(surplusOrDeficit)).toLocaleString()} מהתקרה. חודש חדש = דף חלק לנצח מחדש! 💪`;
+    }
+  } else if (totalIncome > 0 && totalSpent < totalIncome) {
+    budgetFunFact = `שמרת בכיס ${savingsRate}% מסך כל ההכנסות שלך החודש (₪${(totalIncome - totalSpent).toLocaleString()})! 💎`;
+  }
+
+  const budgetStatus = {
+    monthlyCap: Math.round(monthlyCap),
+    surplusOrDeficit: Math.round(surplusOrDeficit),
+    isWithinCap,
+    savingsRate,
+    funFact: budgetFunFact
+  };
+
+  // 4. Persona Badge & Title Generation
+  let persona: MonthlyWrappedData['persona'] = {
+    title: 'הספרינטר הפיננסי',
+    badgeEmoji: '⚡',
+    subtitle: 'שליטה מהירה בקצב החיים',
+    description: 'אתה בתנועה מתמדת, מודע לכל שקל ומוביל את התקציב שלך קדימה במרץ.',
+    tagline: 'שומר על דופק גבוה ויד על הדופק!'
+  };
+
+  if (monthlyCap > 0 && isWithinCap && totalSpent > 0) {
+    if (savingsRate >= 25) {
+      persona = {
+        title: 'החוסך האגדי',
+        badgeEmoji: '💎',
+        subtitle: 'שומר ההון של החודש',
+        description: 'שמרת מעל רבע מכל מה שנכנס לכיס ועמדת בכל התקרות בלי למצמץ. אלוף אמיתי!',
+        tagline: 'עצמאות כלכלית זה לא חלום — זה אתה.'
+      };
+    } else {
+      persona = {
+        title: 'מאסטר השליטה',
+        badgeEmoji: '👑',
+        subtitle: 'עמידה מושלמת בכל היעדים',
+        description: 'לא נתת לאף תקרה לחמוק ממך. סגרת את החודש כמו מנכ"ל תקציב מנוסה.',
+        tagline: 'התקציב עובד בשבילך, לא אתה בשבילו.'
+      };
+    }
+  } else if (topCategory && (topCategory.id === 'food' || topCategory.id === 'entertainment' || topCategory.id === 'shopping') && topCategory.percent >= 35) {
+    persona = {
+      title: 'חובב החיים הטובים',
+      badgeEmoji: '🍔',
+      subtitle: 'יודע להשקיע בעצמו ובפינוקים',
+      description: 'הבטן והנפש שבעות ומרוצות! רוב התקציב החודשי הוקדש לחוויות, אוכל וכיף.',
+      tagline: 'חיים רק פעם אחת — והחודש הזה הוכיח את זה!'
+    };
+  } else if (expenseCount >= 12) {
+    persona = {
+      title: 'המתמיד השקט',
+      badgeEmoji: '🔥',
+      subtitle: 'רצף רישום ומשמעת ברזל',
+      description: 'רשמת בעקביות כל הוצאה ולא פספסת דבר. המודעות שלך היא נשק העל של הכסף שלך.',
+      tagline: 'עקביות מנצחת כל משחק.'
+    };
+  } else if (totalIncome > 0 && totalSpent <= totalIncome) {
+    persona = {
+      title: 'העוגן הבטוח',
+      badgeEmoji: '🛡️',
+      subtitle: 'מאזן חיובי וראש שקט',
+      description: 'ההכנסות ניצחו את ההוצאות, שמרת על מרווח ביטחון וסגרת את החודש בטוח ורגוע.',
+      tagline: 'פלוס בחשבון, שקט בראש.'
+    };
+  }
+
+  return {
+    monthKey: chosenMonthKey,
+    monthName,
+    isCurrentMonth,
+    totalSpent,
+    totalIncome,
+    transactionCount,
+    expenseCount,
+    topCategory,
+    peakDay,
+    budgetStatus,
+    persona
+  };
+}
+
+

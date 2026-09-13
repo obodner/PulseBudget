@@ -2,7 +2,14 @@ import { AppSettings, BudgetCaps, BudgetPeriod, BudgetStatus, DateRange, Transac
 import { CATEGORIES, getCategoryById } from './categories';
 import { DEFAULT_SETTINGS, clearLocalStorage, loadSettings, loadTransactions, saveSettings, saveTransactions } from './storage';
 import { ChartManager } from './chartManager';
-import { generatePulseNuggets, SmartInsight, computePulseLabMetrics, PulseLabMetrics } from './bi/pulseAnalytics';
+import {
+  generatePulseNuggets,
+  SmartInsight,
+  computePulseLabMetrics,
+  PulseLabMetrics,
+  computeMonthlyWrappedData,
+  MonthlyWrappedData
+} from './bi/pulseAnalytics';
 import { isSoundEnabled, playMario1Up, playMarioCoin, playMarioGameOver, playMarioJump, playMarioWarning, setSoundEnabled } from './sound';
 import confetti from 'canvas-confetti';
 import {
@@ -208,6 +215,67 @@ class PulseBudgetApp {
   private simDailyAllowanceVal = document.getElementById('simDailyAllowanceVal') as HTMLElement | null;
   private simResultTip = document.getElementById('simResultTip') as HTMLElement | null;
   private currentLabMetrics: PulseLabMetrics | null = null;
+
+  // Pulse Wrapped (Monthly Stories - Phase 3)
+  private openWrappedBtn = document.getElementById('openWrappedBtn') as HTMLButtonElement | null;
+  private labToWrappedBtn = document.getElementById('labToWrappedBtn') as HTMLButtonElement | null;
+  private wrappedCelebrationBanner = document.getElementById('wrappedCelebrationBanner') as HTMLElement | null;
+  private wrappedBannerTitle = document.getElementById('wrappedBannerTitle') as HTMLElement | null;
+  private wrappedBannerSubtitle = document.getElementById('wrappedBannerSubtitle') as HTMLElement | null;
+  private wrappedBannerActionBtn = document.getElementById('wrappedBannerActionBtn') as HTMLButtonElement | null;
+  private dismissWrappedBannerBtn = document.getElementById('dismissWrappedBannerBtn') as HTMLButtonElement | null;
+  private pulseWrappedModal = document.getElementById('pulseWrappedModal') as HTMLElement | null;
+  private wrappedStoryCard = document.getElementById('wrappedStoryCard') as HTMLElement | null;
+  private closeWrappedBtn = document.getElementById('closeWrappedBtn') as HTMLButtonElement | null;
+  private wrappedProgressTrack = document.getElementById('wrappedProgressTrack') as HTMLElement | null;
+  private wrappedMonthLabel = document.getElementById('wrappedMonthLabel') as HTMLElement | null;
+  private wrappedSoundToggleBtn = document.getElementById('wrappedSoundToggleBtn') as HTMLButtonElement | null;
+  private wrappedSoundIcon = document.getElementById('wrappedSoundIcon') as HTMLElement | null;
+  private wrappedSlidesViewport = document.getElementById('wrappedSlidesViewport') as HTMLElement | null;
+  private wrappedNavPrev = document.getElementById('wrappedNavPrev') as HTMLElement | null;
+  private wrappedNavNext = document.getElementById('wrappedNavNext') as HTMLElement | null;
+  private wrappedShareBtn = document.getElementById('wrappedShareBtn') as HTMLButtonElement | null;
+  private wrappedReplayBtn = document.getElementById('wrappedReplayBtn') as HTMLButtonElement | null;
+
+  // Wrapped Slide Specific Elements
+  private wrappedTotalSpent = document.getElementById('wrappedTotalSpent') as HTMLElement | null;
+  private wrappedTxCountText = document.getElementById('wrappedTxCountText') as HTMLElement | null;
+  private wrappedSlide1Punchline = document.getElementById('wrappedSlide1Punchline') as HTMLElement | null;
+  private wrappedTopCatCircle = document.getElementById('wrappedTopCatCircle') as HTMLElement | null;
+  private wrappedTopCatEmoji = document.getElementById('wrappedTopCatEmoji') as HTMLElement | null;
+  private wrappedTopCatName = document.getElementById('wrappedTopCatName') as HTMLElement | null;
+  private wrappedTopCatSpend = document.getElementById('wrappedTopCatSpend') as HTMLElement | null;
+  private wrappedTopCatPercentText = document.getElementById('wrappedTopCatPercentText') as HTMLElement | null;
+  private wrappedTopCatFunFact = document.getElementById('wrappedTopCatFunFact') as HTMLElement | null;
+  private wrappedPeakAmount = document.getElementById('wrappedPeakAmount') as HTMLElement | null;
+  private wrappedPeakDate = document.getElementById('wrappedPeakDate') as HTMLElement | null;
+  private wrappedPeakFunFact = document.getElementById('wrappedPeakFunFact') as HTMLElement | null;
+  private wrappedDisciplineBox = document.getElementById('wrappedDisciplineBox') as HTMLElement | null;
+  private wrappedDisciplineIcon = document.getElementById('wrappedDisciplineIcon') as HTMLElement | null;
+  private wrappedDisciplineTitle = document.getElementById('wrappedDisciplineTitle') as HTMLElement | null;
+  private wrappedDisciplineMetric = document.getElementById('wrappedDisciplineMetric') as HTMLElement | null;
+  private wrappedDisciplineSub = document.getElementById('wrappedDisciplineSub') as HTMLElement | null;
+  private wrappedSavingsCapsule = document.getElementById('wrappedSavingsCapsule') as HTMLElement | null;
+  private wrappedSavingsRateText = document.getElementById('wrappedSavingsRateText') as HTMLElement | null;
+  private wrappedDisciplineFunFact = document.getElementById('wrappedDisciplineFunFact') as HTMLElement | null;
+  private wrappedPersonaCard = document.getElementById('wrappedPersonaCard') as HTMLElement | null;
+  private wrappedPersonaEmoji = document.getElementById('wrappedPersonaEmoji') as HTMLElement | null;
+  private wrappedPersonaTitle = document.getElementById('wrappedPersonaTitle') as HTMLElement | null;
+  private wrappedPersonaSubtitle = document.getElementById('wrappedPersonaSubtitle') as HTMLElement | null;
+  private wrappedPersonaDesc = document.getElementById('wrappedPersonaDesc') as HTMLElement | null;
+  private wrappedPersonaTagline = document.getElementById('wrappedPersonaTagline') as HTMLElement | null;
+
+  // Wrapped State
+  private currentWrappedData: MonthlyWrappedData | null = null;
+  private currentWrappedSlideIndex: number = 0;
+  private wrappedSlideDurationMs: number = 6000;
+  private wrappedProgressInterval: number | null = null;
+  private wrappedProgressElapsedMs: number = 0;
+  private isWrappedPaused: boolean = false;
+  private wrappedTouchStartX: number = 0;
+  private wrappedTouchStartY: number = 0;
+  private isHoldingWrapped: boolean = false;
+  private holdTimeout: number | null = null;
 
   private transactionsListEl = document.getElementById('transactionsList') as HTMLElement;
   private filterButtons = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
@@ -713,6 +781,7 @@ class PulseBudgetApp {
       if (e.target === this.authModal) this.closeAuthModal();
       if (e.target === this.editNameModal) this.closeEditNameModal();
       if (e.target === this.pulseLabModal) this.closePulseLab();
+      if (e.target === this.pulseWrappedModal) this.closeWrapped();
     });
 
     // Pulse Nuggets events (Phase 1)
@@ -720,6 +789,9 @@ class PulseBudgetApp {
 
     // Pulse Lab events (Phase 2)
     this.setupPulseLabEvents();
+
+    // Pulse Wrapped events (Phase 3)
+    this.setupWrappedEvents();
   }
 
   public switchPeriod(period: BudgetPeriod): void {
@@ -1842,6 +1914,9 @@ class PulseBudgetApp {
     if (this.pulseLabModal?.classList.contains('open')) {
       this.renderPulseLab();
     }
+
+    // 11. Pulse Wrapped Celebration Banner (Phase 3)
+    this.checkAndRenderWrappedBanner();
   }
 
   private updateNotificationsState(): void {
@@ -2891,6 +2966,472 @@ class PulseBudgetApp {
         this.simResultTip.textContent = 'ההוצאות עד כה לא מאפשרות להגיע ליעד זה בחודש הנוכחי 🛑';
         this.simResultTip.style.color = 'var(--neon-red)';
       }
+    }
+  }
+
+  // ==========================================================================
+  // Phase 3: Monthly Pulse Wrapped (החודש שלך ב-Pulse)
+  // ==========================================================================
+
+  private setupWrappedEvents(): void {
+    // Launch triggers
+    this.openWrappedBtn?.addEventListener('click', () => this.openWrapped());
+    this.labToWrappedBtn?.addEventListener('click', () => {
+      this.closePulseLab();
+      this.openWrapped();
+    });
+    this.wrappedBannerActionBtn?.addEventListener('click', () => this.openWrapped());
+    this.dismissWrappedBannerBtn?.addEventListener('click', () => {
+      if (this.wrappedCelebrationBanner) {
+        this.wrappedCelebrationBanner.style.display = 'none';
+        sessionStorage.setItem('pulse_wrapped_banner_dismissed', 'true');
+      }
+    });
+
+    // Close button
+    this.closeWrappedBtn?.addEventListener('click', () => this.closeWrapped());
+
+    // Sound toggle inside story
+    this.wrappedSoundToggleBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const nextState = !isSoundEnabled();
+      setSoundEnabled(nextState);
+      this.updateWrappedSoundIcon();
+      // Sync navbar sound toggle button state
+      if (this.soundToggleBtn) {
+        this.soundToggleBtn.classList.toggle('active', nextState);
+      }
+      if (nextState) {
+        playMarioCoin();
+      }
+    });
+
+    // Tap Navigation Zones
+    // Right zone: Next slide (in RTL reading, clicking the left/right navigation)
+    // Left zone: Previous slide
+    this.wrappedNavNext?.addEventListener('click', () => {
+      if (!this.isHoldingWrapped) {
+        this.nextWrappedSlide();
+      }
+    });
+
+    this.wrappedNavPrev?.addEventListener('click', () => {
+      if (!this.isHoldingWrapped) {
+        this.prevWrappedSlide();
+      }
+    });
+
+    // Replay & Share
+    this.wrappedReplayBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.goToWrappedSlide(0);
+    });
+
+    this.wrappedShareBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.shareWrapped();
+    });
+
+    // Hold / Pause gesture handling on story card
+    const storyCard = this.wrappedStoryCard;
+    if (storyCard) {
+      const handlePressStart = () => {
+        this.holdTimeout = window.setTimeout(() => {
+          this.isHoldingWrapped = true;
+          this.pauseWrapped();
+        }, 180);
+      };
+
+      const handlePressEnd = () => {
+        if (this.holdTimeout) {
+          clearTimeout(this.holdTimeout);
+          this.holdTimeout = null;
+        }
+        if (this.isHoldingWrapped) {
+          this.resumeWrapped();
+          // Reset after short delay so tap doesn't immediately advance
+          setTimeout(() => {
+            this.isHoldingWrapped = false;
+          }, 50);
+        }
+      };
+
+      storyCard.addEventListener('mousedown', handlePressStart);
+      storyCard.addEventListener('mouseup', handlePressEnd);
+      storyCard.addEventListener('mouseleave', handlePressEnd);
+
+      storyCard.addEventListener('touchstart', (e: TouchEvent) => {
+        if (e.touches.length > 0) {
+          this.wrappedTouchStartX = e.touches[0].clientX;
+          this.wrappedTouchStartY = e.touches[0].clientY;
+        }
+        handlePressStart();
+      }, { passive: true });
+
+      storyCard.addEventListener('touchend', (e: TouchEvent) => {
+        handlePressEnd();
+        if (e.changedTouches.length > 0) {
+          const deltaX = e.changedTouches[0].clientX - this.wrappedTouchStartX;
+          const deltaY = e.changedTouches[0].clientY - this.wrappedTouchStartY;
+
+          // Horizontal swipe detection (> 45px, mostly horizontal)
+          if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX < 0) {
+              // Swiped left
+              this.nextWrappedSlide();
+            } else {
+              // Swiped right
+              this.prevWrappedSlide();
+            }
+          }
+        }
+      }, { passive: true });
+    }
+
+    // Keyboard support for desktop
+    window.addEventListener('keydown', (e) => {
+      if (!this.pulseWrappedModal?.classList.contains('open')) return;
+
+      if (e.key === 'Escape') {
+        this.closeWrapped();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === ' ') {
+        e.preventDefault();
+        this.nextWrappedSlide();
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        this.prevWrappedSlide();
+      }
+    });
+  }
+
+  private updateWrappedSoundIcon(): void {
+    if (this.wrappedSoundIcon) {
+      this.wrappedSoundIcon.textContent = isSoundEnabled() ? '🔊' : '🔇';
+    }
+  }
+
+  private checkAndRenderWrappedBanner(): void {
+    if (!this.wrappedCelebrationBanner) return;
+
+    // Check if dismissed in this session
+    const isDismissed = sessionStorage.getItem('pulse_wrapped_banner_dismissed') === 'true';
+    if (isDismissed) {
+      this.wrappedCelebrationBanner.style.display = 'none';
+      return;
+    }
+
+    // Check if we have transactions to show wrapped for
+    if (!this.transactions || this.transactions.length === 0) {
+      this.wrappedCelebrationBanner.style.display = 'none';
+      return;
+    }
+
+    const wrappedData = computeMonthlyWrappedData(this.transactions, this.settings.caps);
+    if (wrappedData.transactionCount > 0) {
+      if (this.wrappedBannerTitle) {
+        this.wrappedBannerTitle.textContent = wrappedData.isCurrentMonth
+          ? `הדופק שלך לחודש ${wrappedData.monthName} כבר פעיל! 🚀`
+          : `החודש שלך ב-Pulse (${wrappedData.monthName}) מוכן! 🎁`;
+      }
+      if (this.wrappedBannerSubtitle) {
+        this.wrappedBannerSubtitle.textContent = `בוא לראות איפה הושקעו ₪${wrappedData.totalSpent.toLocaleString()}, מי מלכת הקטגוריות ומה התואר שלך!`;
+      }
+      this.wrappedCelebrationBanner.style.display = 'flex';
+    } else {
+      this.wrappedCelebrationBanner.style.display = 'none';
+    }
+  }
+
+  public openWrapped(targetMonthKey?: string): void {
+    if (!this.pulseWrappedModal) return;
+
+    this.currentWrappedData = computeMonthlyWrappedData(this.transactions, this.settings.caps, targetMonthKey);
+    const data = this.currentWrappedData;
+
+    // Update month badge label
+    if (this.wrappedMonthLabel) {
+      this.wrappedMonthLabel.textContent = data.monthName;
+    }
+
+    // Populate Slide 1 (Big Picture)
+    if (this.wrappedTotalSpent) {
+      this.wrappedTotalSpent.textContent = `₪${data.totalSpent.toLocaleString()}`;
+    }
+    if (this.wrappedTxCountText) {
+      this.wrappedTxCountText.textContent = `${data.transactionCount} תנועות נרשמו ב-Pulse`;
+    }
+    if (this.wrappedSlide1Punchline) {
+      if (data.totalSpent === 0) {
+        this.wrappedSlide1Punchline.textContent = 'חודש שקט ורגוע במיוחד ללא הוצאות שנרשמו!';
+      } else if (data.expenseCount >= 10) {
+        this.wrappedSlide1Punchline.textContent = 'חודש פעיל ועשיר בחוויות ורישומים!';
+      } else {
+        this.wrappedSlide1Punchline.textContent = 'כל שקל קיבל יחס אישי ומעקב צמוד ב-Pulse.';
+      }
+    }
+
+    // Populate Slide 2 (Queen Category)
+    if (data.topCategory) {
+      if (this.wrappedTopCatEmoji) this.wrappedTopCatEmoji.textContent = data.topCategory.icon;
+      if (this.wrappedTopCatName) this.wrappedTopCatName.textContent = data.topCategory.name;
+      if (this.wrappedTopCatSpend) this.wrappedTopCatSpend.textContent = `₪${data.topCategory.amount.toLocaleString()}`;
+      if (this.wrappedTopCatPercentText) {
+        this.wrappedTopCatPercentText.textContent = `${data.topCategory.percent}% מכל ההוצאות שלך!`;
+      }
+      if (this.wrappedTopCatFunFact) this.wrappedTopCatFunFact.textContent = data.topCategory.funFact;
+      if (this.wrappedTopCatCircle) {
+        this.wrappedTopCatCircle.style.background = `${data.topCategory.color}33`;
+        this.wrappedTopCatCircle.style.borderColor = data.topCategory.color;
+      }
+    } else {
+      if (this.wrappedTopCatEmoji) this.wrappedTopCatEmoji.textContent = '🕊️';
+      if (this.wrappedTopCatName) this.wrappedTopCatName.textContent = 'אין הוצאות עדיין';
+      if (this.wrappedTopCatSpend) this.wrappedTopCatSpend.textContent = '₪0';
+      if (this.wrappedTopCatPercentText) this.wrappedTopCatPercentText.textContent = '0% ניצול תקציב';
+      if (this.wrappedTopCatFunFact) this.wrappedTopCatFunFact.textContent = 'שמרת על ארנק סגור ומוגן החודש!';
+    }
+
+    // Populate Slide 3 (High Roller / Peak Day)
+    if (data.peakDay) {
+      if (this.wrappedPeakAmount) this.wrappedPeakAmount.textContent = `₪${data.peakDay.amount.toLocaleString()}`;
+      if (this.wrappedPeakDate) this.wrappedPeakDate.textContent = data.peakDay.dayFormatted;
+      if (this.wrappedPeakFunFact) this.wrappedPeakFunFact.textContent = data.peakDay.funFact;
+    } else {
+      if (this.wrappedPeakAmount) this.wrappedPeakAmount.textContent = '₪0';
+      if (this.wrappedPeakDate) this.wrappedPeakDate.textContent = 'אין ימי הוצאה חריגים';
+      if (this.wrappedPeakFunFact) this.wrappedPeakFunFact.textContent = 'כל הימים עברו בשלווה תקציבית מוחלטת.';
+    }
+
+    // Populate Slide 4 (Discipline & Surplus)
+    const b = data.budgetStatus;
+    if (this.wrappedDisciplineMetric) {
+      if (b.monthlyCap > 0) {
+        if (b.isWithinCap) {
+          this.wrappedDisciplineMetric.textContent = `+₪${b.surplusOrDeficit.toLocaleString()}`;
+          this.wrappedDisciplineMetric.style.color = '#10b981';
+          if (this.wrappedDisciplineTitle) this.wrappedDisciplineTitle.textContent = 'שליטה מנצחת! 🏆';
+          if (this.wrappedDisciplineSub) this.wrappedDisciplineSub.textContent = 'עודף נותר מתחת לתקרה שהגדרת';
+          if (this.wrappedDisciplineIcon) this.wrappedDisciplineIcon.textContent = '🏆';
+        } else {
+          this.wrappedDisciplineMetric.textContent = `-₪${Math.abs(b.surplusOrDeficit).toLocaleString()}`;
+          this.wrappedDisciplineMetric.style.color = '#ef4444';
+          if (this.wrappedDisciplineTitle) this.wrappedDisciplineTitle.textContent = 'חריגה מהתקרה 🛑';
+          if (this.wrappedDisciplineSub) this.wrappedDisciplineSub.textContent = 'מעבר לתקרה החודשית שהוגדרה';
+          if (this.wrappedDisciplineIcon) this.wrappedDisciplineIcon.textContent = '⚡';
+        }
+      } else {
+        this.wrappedDisciplineMetric.textContent = `₪${data.totalSpent.toLocaleString()}`;
+        this.wrappedDisciplineMetric.style.color = '#00f5d4';
+        if (this.wrappedDisciplineTitle) this.wrappedDisciplineTitle.textContent = 'ניהול שוטף 📊';
+        if (this.wrappedDisciplineSub) this.wrappedDisciplineSub.textContent = 'סך הוצאות (ללא תקרה מוגדרת)';
+        if (this.wrappedDisciplineIcon) this.wrappedDisciplineIcon.textContent = '💎';
+      }
+    }
+
+    if (this.wrappedSavingsRateText) {
+      if (b.savingsRate > 0) {
+        this.wrappedSavingsRateText.textContent = `${b.savingsRate}% מסך ההכנסות נשמר ישירות בכיס!`;
+      } else if (data.totalIncome > 0) {
+        this.wrappedSavingsRateText.textContent = `סך הכנסות חודשי: ₪${data.totalIncome.toLocaleString()}`;
+      } else {
+        this.wrappedSavingsRateText.textContent = 'המשך לנהל מעקב יומי צמוד ב-Pulse!';
+      }
+    }
+    if (this.wrappedDisciplineFunFact) {
+      this.wrappedDisciplineFunFact.textContent = b.funFact;
+    }
+
+    // Populate Slide 5 (Persona Badge & Grand Finale)
+    const p = data.persona;
+    if (this.wrappedPersonaEmoji) this.wrappedPersonaEmoji.textContent = p.badgeEmoji;
+    if (this.wrappedPersonaTitle) this.wrappedPersonaTitle.textContent = p.title;
+    if (this.wrappedPersonaSubtitle) this.wrappedPersonaSubtitle.textContent = p.subtitle;
+    if (this.wrappedPersonaDesc) this.wrappedPersonaDesc.textContent = p.description;
+    if (this.wrappedPersonaTagline) this.wrappedPersonaTagline.textContent = `"${p.tagline}"`;
+
+    // Open Modal
+    this.updateWrappedSoundIcon();
+    this.pulseWrappedModal.style.display = 'flex';
+    // Trigger CSS opacity transition on next tick
+    setTimeout(() => {
+      this.pulseWrappedModal?.classList.add('open');
+    }, 10);
+
+    // Start at Slide 0
+    this.goToWrappedSlide(0);
+  }
+
+  public closeWrapped(): void {
+    this.clearWrappedProgress();
+    this.pulseWrappedModal?.classList.remove('open');
+    setTimeout(() => {
+      if (this.pulseWrappedModal && !this.pulseWrappedModal.classList.contains('open')) {
+        this.pulseWrappedModal.style.display = 'none';
+      }
+    }, 320);
+  }
+
+  private clearWrappedProgress(): void {
+    if (this.wrappedProgressInterval) {
+      clearInterval(this.wrappedProgressInterval);
+      this.wrappedProgressInterval = null;
+    }
+  }
+
+  private goToWrappedSlide(index: number): void {
+    this.clearWrappedProgress();
+    const clampedIndex = Math.max(0, Math.min(4, index));
+    this.currentWrappedSlideIndex = clampedIndex;
+    this.wrappedProgressElapsedMs = 0;
+    this.isWrappedPaused = false;
+
+    // 1. Update Slides Active Class
+    const slides = this.wrappedSlidesViewport?.querySelectorAll('.wrapped-slide');
+    slides?.forEach((slide, idx) => {
+      slide.classList.toggle('active', idx === clampedIndex);
+    });
+
+    // 2. Update Segmented Progress Bars
+    const segments = this.wrappedProgressTrack?.querySelectorAll('.wrapped-progress-seg');
+    segments?.forEach((seg, idx) => {
+      const fill = seg.querySelector('.wrapped-progress-fill') as HTMLElement | null;
+      if (!fill) return;
+
+      if (idx < clampedIndex) {
+        seg.classList.add('completed');
+        fill.style.width = '100%';
+      } else if (idx === clampedIndex) {
+        seg.classList.remove('completed');
+        fill.style.width = '0%';
+      } else {
+        seg.classList.remove('completed');
+        fill.style.width = '0%';
+      }
+    });
+
+    // 3. Audio & Special Effects per Slide
+    if (clampedIndex === 4) {
+      // Grand Finale!
+      playMario1Up();
+      // Celebratory multi-burst confetti
+      confetti({
+        particleCount: 75,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 }
+        });
+      }, 200);
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 }
+        });
+      }, 400);
+    } else {
+      playMarioJump();
+    }
+
+    // 4. Start slide timer with progress bar animation
+    this.startWrappedProgressTimer();
+  }
+
+  private startWrappedProgressTimer(): void {
+    this.clearWrappedProgress();
+    const activeSeg = this.wrappedProgressTrack?.querySelectorAll('.wrapped-progress-seg')[this.currentWrappedSlideIndex];
+    const fill = activeSeg?.querySelector('.wrapped-progress-fill') as HTMLElement | null;
+
+    const stepMs = 50;
+    this.wrappedProgressInterval = window.setInterval(() => {
+      if (this.isWrappedPaused) return;
+
+      this.wrappedProgressElapsedMs += stepMs;
+      const pct = Math.min(100, (this.wrappedProgressElapsedMs / this.wrappedSlideDurationMs) * 100);
+
+      if (fill) {
+        fill.style.width = `${pct}%`;
+      }
+
+      if (this.wrappedProgressElapsedMs >= this.wrappedSlideDurationMs) {
+        this.clearWrappedProgress();
+        if (this.currentWrappedSlideIndex < 4) {
+          this.goToWrappedSlide(this.currentWrappedSlideIndex + 1);
+        } else {
+          // Finished all slides: leave at 100% on last slide
+          if (fill) fill.style.width = '100%';
+        }
+      }
+    }, stepMs);
+  }
+
+  private pauseWrapped(): void {
+    this.isWrappedPaused = true;
+  }
+
+  private resumeWrapped(): void {
+    this.isWrappedPaused = false;
+  }
+
+  public nextWrappedSlide(): void {
+    if (this.currentWrappedSlideIndex < 4) {
+      this.goToWrappedSlide(this.currentWrappedSlideIndex + 1);
+    }
+  }
+
+  public prevWrappedSlide(): void {
+    if (this.currentWrappedSlideIndex > 0) {
+      this.goToWrappedSlide(this.currentWrappedSlideIndex - 1);
+    }
+  }
+
+  private async shareWrapped(): Promise<void> {
+    if (!this.currentWrappedData) return;
+    const data = this.currentWrappedData;
+    const p = data.persona;
+
+    const shareTitle = `החודש שלי ב-PulseBudget (${data.monthName})`;
+    const shareText = `⚡ גיליתי מה תואר החודש שלי ב-PulseBudget!\n🏆 התואר שלי: ${p.title} ${p.badgeEmoji}\n"${p.subtitle}"\nסך הכל ניהלתי ₪${data.totalSpent.toLocaleString()} ב-${data.transactionCount} תנועות.\nבדקו גם אתם את ה-Wrapped שלכם ב-Pulse! 🚀`;
+    const shareUrl = window.location.origin;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl
+        });
+        playMarioCoin();
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fallback to clipboard
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+      playMarioCoin();
+      this.showToastNotification({
+        title: 'התואר הועתק בהצלחה!',
+        desc: 'עכשיו אפשר להדביק ולשתף בכיף בוואטסאפ או בסטורי 📲',
+        icon: '🎁',
+        type: 'info',
+        durationMs: 4000
+      });
+    } catch (e) {
+      this.showToastNotification({
+        title: 'העתקה לא זמינה',
+        desc: 'לא ניתן להעתיק ללוח במכשיר זה',
+        icon: '⚠️',
+        type: 'warning',
+        durationMs: 3000
+      });
     }
   }
 }
