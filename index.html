@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PulseBudget | ניהול פיננסי חכם</title>
+  <meta name="description"
+    content="אפליקציית ניהול פיננסי חכמה - מעקב הוצאות, הכנסות, תקרות והתראות חריגה עם גרפים וסינון תאריכים" />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+
+<body>
+  <!-- Hidden SVG Gradients for Activity Ring -->
+  <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+    <defs>
+      <!-- Safe Emerald/Cyan Gradient -->
+      <linearGradient id="cyan-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#00F5D4" />
+        <stop offset="100%" stop-color="#10B981" />
+      </linearGradient>
+      <!-- Warning Amber Gradient -->
+      <linearGradient id="amber-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FCD34D" />
+        <stop offset="100%" stop-color="#FF7A00" />
+      </linearGradient>
+      <!-- Danger Crimson Gradient -->
+      <linearGradient id="red-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FF4D6D" />
+        <stop offset="100%" stop-color="#EF4444" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="app-container">
+    <!-- Top Navigation Header -->
+    <header class="top-nav">
+      <div class="top-nav-main">
+        <div class="brand-area">
+          <div class="brand-icon" aria-label="סימן ש״ח">
+            <span class="nis-brand-icon">₪</span>
+          </div>
+          <div>
+            <div class="brand-title">PulseBudget</div>
+            <div class="brand-sub" id="currentDateDisplay">טוען תאריך...</div>
+          </div>
+        </div>
+
+        <!-- Left Controls Group: Profile Button + Notification Bell (in RTL, bell is to the left of profile) -->
+        <div class="top-nav-left-group">
+          <!-- User Authentication Button & Dropdown Menu -->
+          <div class="user-menu-wrapper" id="userMenuWrapper">
+            <button id="authBtn" class="btn-pill btn-auth-left" aria-label="התחברות או ניהול חשבון" aria-haspopup="true"
+              aria-expanded="false">
+              <svg id="authBtnIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span id="authBtnText">התחברות</span>
+              <svg id="authDropdownArrow" class="dropdown-arrow-icon" style="display: none;" width="14" height="14"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+
+            <!-- User Dropdown Menu -->
+            <div id="userDropdownMenu" class="user-dropdown-menu" style="display: none;">
+              <div class="user-dropdown-header">
+                <div class="user-dropdown-name-row">
+                  <div class="user-dropdown-name" id="dropdownUserName">משתמש</div>
+                  <button type="button" id="editProfileNameHeaderBtn" class="edit-profile-name-btn"
+                    title="ערוך שם תצוגה" aria-label="ערוך שם תצוגה">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="user-dropdown-email" id="dropdownUserEmail">user@example.com</div>
+                <div class="user-dropdown-badge">
+                  <span class="pulse-dot"></span>
+                  <span>סנכרון ענן פעיל</span>
+                </div>
+              </div>
+              <div class="user-dropdown-divider"></div>
+              <button type="button" id="editProfileNameMenuBtn" class="user-dropdown-item">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>שינוי שם תצוגה</span>
+              </button>
+              <button type="button" id="logoutDropdownBtn" class="user-dropdown-item logout">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>התנתק מהחשבון</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Notifications Button & Dropdown Menu (Positioned to the left of profile button) -->
+          <div class="notifications-wrapper" id="notificationsWrapper">
+            <button id="notificationsBtn" class="icon-btn notifications-btn" aria-label="התראות פעילות"
+              aria-haspopup="true" aria-expanded="false" title="התראות פעילות">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span id="notificationsBadge" class="notifications-badge" style="display: none;">0</span>
+            </button>
+
+            <!-- Notifications Dropdown Menu -->
+            <div id="notificationsDropdown" class="notifications-dropdown" style="display: none;">
+              <div class="notifications-dropdown-header">
+                <div class="notifications-dropdown-title">
+                  <span>🔔</span>
+                  <span>התראות תקציב פעילות</span>
+                </div>
+                <span id="notificationsDropdownCount" class="notifications-count-tag">0 התראות</span>
+              </div>
+              <div class="notifications-dropdown-divider"></div>
+              <div id="notificationsList" class="notifications-list">
+                <!-- Populated dynamically by TypeScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Pulse Lab BI Button -->
+          <button id="openPulseLabBtn" class="btn-pill btn-lab-nav" aria-label="מעבדת הדופק - אנליטיקה ו-BI"
+            title="מעבדת הדופק (Pulse Lab)">
+            <span class="lab-nav-icon">🧪</span>
+            <span class="lab-nav-text">מעבדה</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- New Transaction button -->
+        <button id="openNewTxBtn" class="btn-pill btn-pill-primary" aria-label="הוספת תנועה">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          תנועה חדשה
+        </button>
+
+        <!-- Caps Settings button -->
+        <button id="openCapsBtn" class="btn-pill" aria-label="הגדרת תקרות תקציב">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
+          תקרות
+        </button>
+
+        <!-- Super Mario Sound FX toggle button -->
+        <button id="soundToggleBtn" class="icon-btn active" title="הפעל/השתק צלילי סופר מריו"
+          aria-label="מתג סאונד סופר מריו">
+          <svg id="soundIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dynamic Warning / Danger Alert Banner -->
+    <section id="alertBanner" class="alert-banner" role="alert">
+      <div class="alert-content">
+        <div class="alert-icon" id="alertIcon">⚠️</div>
+        <div>
+          <div class="alert-title" id="alertTitle">התראת תקציב</div>
+          <div class="alert-desc" id="alertDesc">פרטי ההתראה</div>
+        </div>
+      </div>
+      <button id="alertDismissBtn" class="icon-btn" title="סגור התראה">✕</button>
+    </section>
+
+    <!-- Controls: Period Segmented Switcher + Date Range Filter -->
+    <section class="controls-container">
+      <nav class="period-segmented-wrap" aria-label="בחירת תקופת מעקב">
+        <div class="period-segmented">
+          <button class="period-btn" data-period="daily">
+            <span>⚡ יומי</span>
+          </button>
+          <button class="period-btn" data-period="weekly">
+            <span>📊 שבועי</span>
+          </button>
+          <button class="period-btn active" data-period="monthly">
+            <span>🗓️ חודשי</span>
+          </button>
+          <button class="period-btn" data-period="custom" id="customRangePeriodBtn">
+            <span>📅 טווח תאריכים</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Date Range Bar (Filter data by selected dates) -->
+      <div class="date-range-bar" id="dateRangeBar">
+        <div class="date-range-inputs">
+          <div class="date-input-group">
+            <label for="filterStartDate">מתאריך:</label>
+            <div class="eu-date-wrapper">
+              <input type="text" id="filterStartDate" class="date-picker-cyber eu-date-input" placeholder="dd/mm/yyyy"
+                maxlength="10" autocomplete="off" />
+              <input type="date" id="nativeStartDate" class="native-hidden-date" tabindex="-1" />
+              <button type="button" class="calendar-trigger-btn" id="triggerStartCalendar" title="בחר תאריך">📅</button>
+            </div>
+          </div>
+          <div class="date-input-group">
+            <label for="filterEndDate">עד תאריך:</label>
+            <div class="eu-date-wrapper">
+              <input type="text" id="filterEndDate" class="date-picker-cyber eu-date-input" placeholder="dd/mm/yyyy"
+                maxlength="10" autocomplete="off" />
+              <input type="date" id="nativeEndDate" class="native-hidden-date" tabindex="-1" />
+              <button type="button" class="calendar-trigger-btn" id="triggerEndCalendar" title="בחר תאריך">📅</button>
+            </div>
+          </div>
+        </div>
+        <div class="date-presets">
+          <button type="button" class="date-preset-btn" data-preset="today">היום</button>
+          <button type="button" class="date-preset-btn" data-preset="7days">7 ימים</button>
+          <button type="button" class="date-preset-btn" data-preset="30days">30 יום</button>
+          <button type="button" class="date-preset-btn" data-preset="all">הכל</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Dashboard Section (Ring + Stat Cards) -->
+    <main class="dashboard-grid">
+      <!-- Central Activity Ring Card -->
+      <article class="pedometer-hero-card">
+        <div class="ring-container">
+          <svg class="ring-svg" viewBox="0 0 280 280">
+            <circle class="ring-track" cx="140" cy="140" r="125"></circle>
+            <circle id="ringProgressCircle" class="ring-progress" cx="140" cy="140" r="125"></circle>
+          </svg>
+
+          <!-- Digital Core Content Inside the Ring -->
+          <div class="ring-center-content">
+            <div id="ringStatusPill" class="status-pill safe">
+              <span class="pulse-dot"></span>
+              <span id="ringStatusText">בטווח היעד</span>
+            </div>
+            <div id="ringSpentDisplay" class="ring-spent-amount">₪0</div>
+            <div class="ring-cap-label">
+              <span id="ringCapPrefix">נותר מתוך תקרה של</span> <span id="ringCapDisplay"
+                class="ring-cap-amount">₪0</span>
+            </div>
+            <div id="ringPercentBadge" class="ring-percent-badge">0.0% נוצל</div>
+          </div>
+        </div>
+
+        <!-- Sub metrics footer in hero card -->
+        <div class="hero-footer-stats">
+          <div class="hero-stat-box">
+            <div class="hero-stat-label">סך הוצאות בפועל</div>
+            <div id="heroRemainingVal" class="hero-stat-value">₪0</div>
+          </div>
+          <div class="hero-stat-box">
+            <div class="hero-stat-label">קצב צריכה (Burn Rate)</div>
+            <div id="heroPaceVal" class="hero-stat-value">תקין</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Side Metrics Cards -->
+      <section class="metrics-column">
+        <!-- Expenses Card -->
+        <div class="metric-card">
+          <div class="metric-info">
+            <div class="metric-icon-wrap expense">
+              <span>📉</span>
+            </div>
+            <div>
+              <div class="metric-title" id="metricExpTitle">סך הוצאות</div>
+              <div class="metric-value" id="metricExpValue">₪0</div>
+            </div>
+          </div>
+          <div class="metric-extra" id="metricExpCount">0 עסקאות</div>
+        </div>
+
+        <!-- Incomes Card -->
+        <div class="metric-card">
+          <div class="metric-info">
+            <div class="metric-icon-wrap income">
+              <span>📈</span>
+            </div>
+            <div>
+              <div class="metric-title" id="metricIncTitle">סך הכנסות</div>
+              <div class="metric-value" id="metricIncValue">₪0</div>
+            </div>
+          </div>
+          <div class="metric-extra" id="metricIncCount">0 הפקדות</div>
+        </div>
+
+        <!-- Net Balance Card -->
+        <div class="metric-card">
+          <div class="metric-info">
+            <div class="metric-icon-wrap net">
+              <span>💎</span>
+            </div>
+            <div>
+              <div class="metric-title">מאזן כספי נטו</div>
+              <div class="metric-value" id="metricNetValue">₪0</div>
+            </div>
+          </div>
+          <div class="metric-extra" id="metricNetStatus">מאוזן</div>
+        </div>
+
+        <!-- Ceiling Status Card -->
+        <div class="metric-card">
+          <div class="metric-info">
+            <div class="metric-icon-wrap pace">
+              <span>🎯</span>
+            </div>
+            <div>
+              <div class="metric-title" id="metricCapTitle">יעד תקרה</div>
+              <div class="metric-value" id="metricCapValue">₪250</div>
+            </div>
+          </div>
+          <div class="metric-extra" id="metricCapAlert">100% נותרו</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Pulse Nuggets (Smart Insights Card - Phase 1) -->
+    <section id="pulseNuggetsSection" class="pulse-nuggets-section" aria-label="תובנות בזק חכמות">
+      <div class="pulse-nuggets-card" id="pulseNuggetsCard">
+        <div class="pulse-nuggets-top-bar">
+          <div class="pulse-nuggets-badge-group">
+            <div class="pulse-nuggets-badge">
+              <span class="nuggets-pulse-dot"></span>
+              <span class="nuggets-badge-label">תובנת דופק</span>
+            </div>
+            <button type="button" id="nuggetsToLabBtn" class="nuggets-lab-link-btn" title="למעבדת הדופק המלאה">
+              <span>מעבדה</span>
+              <span class="lab-link-icon">🧪</span>
+            </button>
+          </div>
+          <div class="pulse-nuggets-counter" id="nuggetsCounter">1/1</div>
+        </div>
+
+        <div class="pulse-nuggets-body" id="nuggetsBody">
+          <div class="nugget-emoji-wrap">
+            <span class="nugget-emoji" id="nuggetEmoji">🚀</span>
+          </div>
+          <div class="nugget-content">
+            <div class="nugget-title-row">
+              <h3 class="nugget-title" id="nuggetTitle">תחזית סוף חודש</h3>
+              <span class="nugget-highlight-badge" id="nuggetHighlight" style="display: none;"></span>
+            </div>
+            <p class="nugget-text" id="nuggetText">טוען תובנות חכמות על התקציב שלך...</p>
+          </div>
+        </div>
+
+        <div class="pulse-nuggets-footer">
+          <div class="nuggets-dots-container" id="nuggetsDots">
+            <!-- Dynamic dots rendered via JS -->
+          </div>
+          <div class="nuggets-nav-controls">
+            <button type="button" id="nuggetPrevBtn" class="nugget-nav-btn" aria-label="תובנה קודמת"
+              title="תובנה קודמת">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+            <button type="button" id="nuggetNextBtn" class="nugget-nav-btn" aria-label="תובנה הבאה" title="תובנה הבאה">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Neon Interactive Graph Section -->
+    <section class="chart-section">
+      <div class="chart-header">
+        <h2 class="section-title">
+          <span>📊</span>
+          <span id="chartSectionTitle">מעקב הוצאות</span>
+        </h2>
+      </div>
+      <div class="chart-canvas-wrapper">
+        <canvas id="budgetChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Category Breakdown Table Panel (Below Graph, visible for Daily/Weekly/Monthly) -->
+    <section id="categoryBreakdownSection" class="category-breakdown-section" style="display: none;">
+      <div class="category-breakdown-header">
+        <div class="category-breakdown-title-wrap">
+          <h2 class="section-title">
+            <span>🏷️</span>
+            <span id="categoryBreakdownTitle">פילוח הוצאות ותקרות לפי קטגוריה</span>
+          </h2>
+          <span id="categoryBreakdownPeriodBadge" class="period-badge-tag">חודשי</span>
+        </div>
+        <div class="category-breakdown-summary" id="categoryBreakdownSummary">
+          0 קטגוריות עם הוצאות
+        </div>
+      </div>
+
+      <div class="category-table-responsive">
+        <table class="category-breakdown-table" id="categoryBreakdownTable">
+          <thead>
+            <tr>
+              <th scope="col" style="width: 28%;">קטגוריה</th>
+              <th scope="col" style="width: 22%;">תקרה לתקופה</th>
+              <th scope="col" style="width: 22%;">סך הוצאות</th>
+              <th scope="col" style="width: 28%;">% ניצול תקציב</th>
+            </tr>
+          </thead>
+          <tbody id="categoryBreakdownTbody">
+            <!-- Dynamically populated rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Transactions Ledger Section -->
+    <section class="ledger-section">
+      <div class="ledger-header">
+        <h2 class="section-title">
+          <span>📑</span>
+          <span>רשומות תנועה בטווח הנבחר</span>
+        </h2>
+        <div class="filter-pills" role="tablist" aria-label="סינון סוגי תנועות">
+          <button class="filter-btn active" data-filter="all">
+            <span>הכל</span>
+            <span class="tab-count-pill" id="tabCountAll">0</span>
+          </button>
+          <button class="filter-btn" data-filter="expense">
+            <span>הוצאות</span>
+            <span class="tab-count-pill" id="tabCountExpense">0</span>
+          </button>
+          <button class="filter-btn" data-filter="income">
+            <span>הכנסות</span>
+            <span class="tab-count-pill" id="tabCountIncome">0</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="transactionsList" class="transactions-list">
+        <!-- Transaction items rendered dynamically -->
+      </div>
+    </section>
+  </div>
+
+  <!-- Mobile Floating Action Button (Thumb friendly) -->
+  <button id="mobileFabBtn" class="mobile-fab" title="הוספת תנועה חדשה" aria-label="תנועה חדשה">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"
+      stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+  </button>
+
+  <!-- Modal: Add New Transaction -->
+  <div id="newTxModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalNewTxTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalNewTxTitle" class="modal-title">הזנת תנועה כספית חדשה</h3>
+        <button id="closeTxModalBtn" class="modal-close-btn" aria-label="סגור">✕</button>
+      </div>
+
+      <form id="txForm">
+        <!-- Type switch: Expense / Income -->
+        <div class="type-toggle">
+          <button type="button" class="type-option-btn active expense" data-type="expense">
+            <span>📉</span> הוצאה
+          </button>
+          <button type="button" class="type-option-btn income" data-type="income">
+            <span>📈</span> הכנסה
+          </button>
+        </div>
+
+        <!-- Amount -->
+        <div class="form-group">
+          <label class="form-label" for="txAmount">סכום (₪):</label>
+          <input type="number" id="txAmount" class="input-cyber mono" placeholder="0.00" min="0.01" step="any" required
+            autofocus />
+        </div>
+
+        <!-- Category -->
+        <div class="form-group">
+          <label class="form-label" for="txCategory">קטגוריה:</label>
+          <select id="txCategory" class="input-cyber" required>
+            <!-- Rendered dynamically -->
+          </select>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="form-group">
+          <label class="form-label" for="txDate">תאריך ושעה:</label>
+          <input type="datetime-local" id="txDate" class="input-cyber" required />
+        </div>
+
+        <!-- Description Note -->
+        <div class="form-group">
+          <label class="form-label" for="txNote">תיאור / הערה (אופציונלי):</label>
+          <input type="text" id="txNote" class="input-cyber" placeholder="לדוגמה: סופרמרקט, דלק, משכורת..." />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="cancelTxBtn" class="btn-secondary">ביטול</button>
+          <button type="submit" class="btn-pill btn-pill-primary">שמור תנועה</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Configure Budget Caps -->
+  <div id="capsModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalCapsTitle">
+    <div class="modal-dialog caps-modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalCapsTitle" class="modal-title">הגדרת תקרות תקציב יעד</h3>
+          <div class="modal-subtitle" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">
+            תקרת מטריה כוללת ותקרות ייעודיות לקטגוריות הוצאה
+          </div>
+        </div>
+        <button id="closeCapsModalBtn" class="modal-close-btn" aria-label="סגור">✕</button>
+      </div>
+
+      <form id="capsForm">
+        <!-- Mandatory Setup Notice -->
+        <div id="capsMandatoryNotice" class="caps-mandatory-notice" style="display: none;">
+          <div class="caps-mandatory-icon">🛡️</div>
+          <div>
+            <strong>שלב ראשון: הגדרת תקרות תקציב</strong>
+            <div style="font-size: 0.8rem; margin-top: 0.25rem; opacity: 0.9;">
+              על מנת לעקוב בצורה מדויקת, עליך להגדיר לפחות תקרה תקפה אחת (ביומית, שבועית או חודשית) לפני שתוכל להזין
+              תנועות.
+            </div>
+          </div>
+        </div>
+
+        <!-- Validation Error Message Alert -->
+        <div id="capsValidationMsg" class="caps-validation-alert" role="alert" style="display: none;"></div>
+
+        <!-- Section 1: General Umbrella Caps -->
+        <div class="caps-section-block">
+          <div class="caps-section-header">
+            <div class="caps-section-title">
+              <span class="caps-title-icon">🌐</span>
+              <span>תקרת מטריה כללית (General Umbrella)</span>
+            </div>
+            <span class="caps-umbrella-badge">תקרת-על</span>
+          </div>
+          <p class="caps-section-desc">
+            תקרה זו משמשת כחסם עליון עבור כלל ההוצאות. תקרות הקטגוריות נגזרות ממנה ואינן יכולות לחרוג ממנה.
+          </p>
+
+          <!-- Daily Cap -->
+          <div class="cap-slider-row">
+            <div class="cap-label-val">
+              <span class="form-label">תקרה יומית כללית (₪):</span>
+              <span id="dailyCapDisplayVal" class="cap-val-display">₪0</span>
+            </div>
+            <input type="number" id="inputDailyCap" class="input-cyber mono" min="0" step="any"
+              placeholder="הזן תקרה יומית (לדוגמה: 250)" />
+          </div>
+
+          <!-- Weekly Cap -->
+          <div class="cap-slider-row">
+            <div class="cap-label-val">
+              <span class="form-label">תקרה שבועית כללית (₪):</span>
+              <span id="weeklyCapDisplayVal" class="cap-val-display">₪0</span>
+            </div>
+            <input type="number" id="inputWeeklyCap" class="input-cyber mono" min="0" step="any"
+              placeholder="הזן תקרה שבועית (לדוגמה: 1750)" />
+          </div>
+
+          <!-- Monthly Cap -->
+          <div class="cap-slider-row">
+            <div class="cap-label-val">
+              <span class="form-label">תקרה חודשית כללית (₪):</span>
+              <span id="monthlyCapDisplayVal" class="cap-val-display">₪0</span>
+            </div>
+            <input type="number" id="inputMonthlyCap" class="input-cyber mono" min="0" step="any"
+              placeholder="הזן תקרה חודשית (לדוגמה: 7500)" />
+          </div>
+        </div>
+
+        <!-- Section 2: Category-Based Caps -->
+        <div class="caps-section-block">
+          <div class="caps-section-header">
+            <div class="caps-section-title">
+              <span class="caps-title-icon">🏷️</span>
+              <span>תקרות ייעודיות לפי קטגוריות הוצאה</span>
+            </div>
+            <span id="categoryCapsActiveCount" class="caps-active-counter">0 מוגדרות</span>
+          </div>
+          <p class="caps-section-desc">
+            ניתן להגדיר תקרות לקטגוריות ספציפיות (מזון, תחבורה וכו'). תקרת קטגוריה לא יכולה לעלות על התקרה הכללית.
+          </p>
+
+          <!-- Dynamic container for category cards -->
+          <div id="categoryCapsContainer" class="category-caps-container">
+            <!-- Dynamically populated by JS -->
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="resetDataBtn" class="btn-secondary"
+            style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" title="איפוס כל הנתונים">איפוס נתונים</button>
+          <button type="submit" class="btn-pill btn-pill-primary">שמור תקרות</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Authentication (Login / Register / Google) -->
+  <div id="authModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalAuthTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalAuthTitle" class="modal-title">התחברות לחשבון</h3>
+          <div class="modal-subtitle" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">סנכרן את
+            התנועות והתקרות שלך בענן ב-Firestore</div>
+        </div>
+        <button id="closeAuthModalBtn" class="modal-close-btn" aria-label="סגור">✕</button>
+      </div>
+
+      <!-- Google 1-Click Login Button -->
+      <button type="button" id="googleLoginBtn" class="btn-google">
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+          <path fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+          <path fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+          <path fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+        </svg>
+        <span>התחברות מהירה עם חשבון Google</span>
+      </button>
+
+      <div class="auth-divider">
+        <span>או באמצעות דוא״ל וסיסמה</span>
+      </div>
+
+      <!-- Auth Error Alert -->
+      <div id="authErrorAlert" class="caps-validation-alert" style="display: none;"></div>
+
+      <form id="emailAuthForm">
+        <!-- Mode Tabs: Login / Register -->
+        <div class="type-toggle" style="margin-bottom: 1rem;">
+          <button type="button" class="type-option-btn active" id="authTabLogin">
+            התחברות
+          </button>
+          <button type="button" class="type-option-btn" id="authTabRegister">
+            הרשמה חדשה
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="authEmail">כתובת אימייל:</label>
+          <input type="email" id="authEmail" class="input-cyber" placeholder="name@example.com" required
+            autocomplete="email" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="authPassword">סיסמה:</label>
+          <input type="password" id="authPassword" class="input-cyber" placeholder="לפחות 6 תווים" required
+            minlength="6" autocomplete="current-password" />
+        </div>
+
+        <div class="modal-actions" style="margin-top: 1.25rem;">
+          <button type="button" id="guestAuthBtn" class="btn-secondary">המשך כאורח</button>
+          <button type="submit" id="authSubmitBtn" class="btn-pill btn-pill-primary">התחבר</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Profile Name -->
+  <div id="editNameModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalEditNameTitle">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="modalEditNameTitle" class="modal-title">שינוי שם תצוגה</h3>
+          <div class="modal-subtitle" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">
+            השם שיוצג בראש המסך ובתפריט הפרופיל שלך
+          </div>
+        </div>
+        <button id="closeEditNameModalBtn" class="modal-close-btn" aria-label="סגור">✕</button>
+      </div>
+
+      <form id="editNameForm">
+        <div class="form-group">
+          <label class="form-label" for="inputProfileName">שם תצוגה:</label>
+          <input type="text" id="inputProfileName" class="input-cyber" placeholder="לדוגמה: יונתן / אמא / אורן" required
+            maxlength="30" autocomplete="name" />
+          <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.35rem;">
+            שם זה ישמש לזיהוי מהיר של הפרופיל שלך בסרגל הראשי.
+          </div>
+        </div>
+
+        <div id="editNameErrorAlert" class="caps-validation-alert" style="display: none;"></div>
+
+        <div class="modal-actions" style="margin-top: 1.25rem;">
+          <button type="button" id="cancelEditNameBtn" class="btn-secondary">ביטול</button>
+          <button type="submit" id="saveProfileNameBtn" class="btn-pill btn-pill-primary">שמור שינויים</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Pulse Lab (מעבדת הדופק - Phase 2) -->
+  <div id="pulseLabModal" class="modal-overlay pulse-lab-modal-overlay" role="dialog" aria-modal="true"
+    aria-labelledby="modalPulseLabTitle">
+    <div class="modal-dialog pulse-lab-dialog">
+      <!-- Mobile Pull Bar -->
+      <div class="pulse-lab-grab-handle"></div>
+
+      <div class="modal-header pulse-lab-header">
+        <div class="pulse-lab-header-title-wrap">
+          <div class="pulse-lab-title-row">
+            <span class="lab-header-icon">🧪</span>
+            <h3 id="modalPulseLabTitle" class="modal-title">מעבדת הדופק</h3>
+          </div>
+          <div class="modal-subtitle" id="pulseLabPeriodSubtitle">
+            אנליטיקה חכמה, קצב שריפה והרגלי כסף
+          </div>
+        </div>
+        <button id="closePulseLabBtn" class="modal-close-btn" aria-label="סגור מעבדה">✕</button>
+      </div>
+
+      <div class="pulse-lab-body">
+        <!-- Section 1: KPI Pulse Cards -->
+        <div class="pulse-lab-grid-cards">
+          <!-- Card 1: Runway / Projected Month-End -->
+          <div class="lab-kpi-card" id="labCardForecast">
+            <div class="lab-kpi-header">
+              <span class="lab-kpi-icon">🚀</span>
+              <span class="lab-kpi-label">תחזית סוף חודש</span>
+            </div>
+            <div class="lab-kpi-val" id="labForecastValue">₪0</div>
+            <div class="lab-kpi-sub" id="labForecastSub">מחשב קצב סגירה...</div>
+          </div>
+
+          <!-- Card 2: Cash Kept / Savings Rate -->
+          <div class="lab-kpi-card" id="labCardSavings">
+            <div class="lab-kpi-header">
+              <span class="lab-kpi-icon">💎</span>
+              <span class="lab-kpi-label">נשמר בכיס מההכנסות</span>
+            </div>
+            <div class="lab-kpi-val" id="labSavingsValue">0%</div>
+            <div class="lab-kpi-sub" id="labSavingsSub">מאזן נקי: ₪0</div>
+          </div>
+
+          <!-- Card 3: Peak Spend Day -->
+          <div class="lab-kpi-card" id="labCardPeakDay">
+            <div class="lab-kpi-header">
+              <span class="lab-kpi-icon">🔥</span>
+              <span class="lab-kpi-label">היום הכי יקר בשבוע</span>
+            </div>
+            <div class="lab-kpi-val" id="labPeakDayValue">-</div>
+            <div class="lab-kpi-sub" id="labPeakDaySub">ממוצע של ₪0 ליום זה</div>
+          </div>
+
+          <!-- Card 4: Daily Burn vs Target -->
+          <div class="lab-kpi-card" id="labCardBurn">
+            <div class="lab-kpi-header">
+              <span class="lab-kpi-icon">⚡</span>
+              <span class="lab-kpi-label">קצב שריפה יומי</span>
+            </div>
+            <div class="lab-kpi-val" id="labBurnValue">₪0/יום</div>
+            <div class="lab-kpi-sub" id="labBurnSub">מול תקרה יומית של ₪0</div>
+          </div>
+        </div>
+
+        <!-- Section 2: Weekly Vibe Heatmap -->
+        <div class="lab-section-card">
+          <div class="lab-section-header">
+            <div class="lab-section-title-wrap">
+              <span class="lab-sec-icon">🌡️</span>
+              <span class="lab-sec-title">מפת החום של השבוע (ממוצע הוצאה לפי יום)</span>
+            </div>
+            <span class="lab-sec-hint">מזהה ימי בזבוז חמים מול ימים רגועים</span>
+          </div>
+          <div class="heatmap-days-grid" id="labHeatmapGrid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Section 3: Top Expense Eaters (בולעני הכסף) -->
+        <div class="lab-section-card">
+          <div class="lab-section-header">
+            <div class="lab-section-title-wrap">
+              <span class="lab-sec-icon">🍔</span>
+              <span class="lab-sec-title">בולעני הכסף של החודש (Top Categories)</span>
+            </div>
+            <span class="lab-sec-hint" id="labTopCatHint">הקטגוריות שצורכות הכי הרבה שקלים</span>
+          </div>
+          <div class="lab-categories-list" id="labCategoriesList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Section 4: Top Places & Merchants (איפה הכסף הולך) -->
+        <div class="lab-section-card">
+          <div class="lab-section-header">
+            <div class="lab-section-title-wrap">
+              <span class="lab-sec-icon">📍</span>
+              <span class="lab-sec-title">איפה הכסף הולך? (בתי עסק מובילים)</span>
+            </div>
+            <span class="lab-sec-hint">מתוך שמות בתי העסק וההערות שרשמת</span>
+          </div>
+          <div class="lab-merchants-list" id="labMerchantsList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Section 5: Interactive Safe Spend Simulator -->
+        <div class="lab-section-card simulator-card">
+          <div class="lab-section-header">
+            <div class="lab-section-title-wrap">
+              <span class="lab-sec-icon">🎯</span>
+              <span class="lab-sec-title">סימולטור: "כמה מותר לי להוציא ליום?"</span>
+            </div>
+            <span class="lab-sec-hint">כוון יעד חיסכון וקבל תקציב יומי מדויק</span>
+          </div>
+          <div class="simulator-body">
+            <div class="sim-slider-row">
+              <div class="sim-label-wrap">
+                <label for="simTargetSavingsInput" class="sim-slider-label">אני רוצה לסיים את החודש עם עודף של:</label>
+                <span class="sim-target-val" id="simTargetVal">₪500</span>
+              </div>
+              <input type="range" id="simTargetSavingsInput" min="0" max="3000" step="50" value="500"
+                class="sim-slider" />
+            </div>
+            <div class="sim-result-box">
+              <div class="sim-result-sub" id="simDaysRemainingText">בימים שנשארו לחודש:</div>
+              <div class="sim-result-hero">
+                <span class="sim-hero-prefix">מותר לך להוציא עד</span>
+                <span class="sim-hero-number" id="simDailyAllowanceVal">₪145</span>
+                <span class="sim-hero-suffix">ליום</span>
+              </div>
+              <div class="sim-result-tip" id="simResultTip">תקציב ריאלי ומאוזן — שמור עליו ותסגור את החודש כמו מלך 👑
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Notifications Container -->
+  <div id="toastContainer" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+
+</html>
