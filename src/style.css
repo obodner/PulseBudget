@@ -114,6 +114,12 @@ body {
   gap: 1.25rem;
 }
 
+.top-nav-left-group {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .brand-area {
   display: flex;
   align-items: center;
@@ -2320,19 +2326,28 @@ body {
     width: 100%;
   }
 
+  .top-nav-left-group {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-shrink: 0;
+  }
+
   .nav-actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .nav-actions #openNewTxBtn {
     flex: 1.25;
     justify-content: center;
     min-height: 38px;
-    padding: 0.45rem 0.75rem;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.85rem;
   }
 
   .nav-actions #openCapsBtn {
@@ -2340,6 +2355,29 @@ body {
     justify-content: center;
     min-height: 38px;
     padding: 0.45rem 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  .nav-actions #soundToggleBtn {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .nav-actions .btn-lab-nav {
+    flex: 1 1 calc(50% - 0.25rem);
+    justify-content: center;
+    min-height: 38px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.84rem;
+  }
+
+  .nav-actions .btn-wrapped-nav {
+    flex: 1 1 calc(50% - 0.25rem);
+    justify-content: center;
+    min-height: 38px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.84rem;
   }
 
   .user-menu-wrapper {
