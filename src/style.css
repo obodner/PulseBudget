@@ -4441,3 +4441,60 @@ body {
     margin-right: 0;
   }
 }
+
+/* Floating Toast Notifications */
+.toast-container {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  align-items: center;
+  max-width: 90vw;
+}
+
+.toast-notification {
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid var(--accent-cyan, #00F5D4);
+  color: #F8FAFC;
+  padding: 0.7rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55), 0 0 15px rgba(0, 245, 212, 0.25);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+  animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.toast-notification.fade-out {
+  animation: toastFadeOut 0.35s ease forwards;
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}

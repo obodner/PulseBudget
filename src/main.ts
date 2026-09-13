@@ -444,20 +444,37 @@ class PulseBudgetApp {
           }, 350);
         }
 
-        // Subscribe to user's Firestore transactions in real time
+        // Subscribe to user's Firestore transactions in real time with two-way offline merge
         this.unsubscribeFirestore = subscribeToUserTransactions(
           user.uid,
           async (cloudTxs) => {
-            const seen = new Set<string>();
-            const unique: Transaction[] = [];
+            const cloudMap = new Map<string, Transaction>();
             for (const tx of cloudTxs) {
-              if (tx.id && !seen.has(tx.id)) {
-                seen.add(tx.id);
-                unique.push(tx);
+              if (tx.id) cloudMap.set(tx.id, tx);
+            }
+
+            // Detect any local-only transactions created offline that haven't reached the cloud yet
+            const localOnlyTxs: Transaction[] = [];
+            for (const ltx of this.transactions) {
+              if (ltx.id && !cloudMap.has(ltx.id)) {
+                localOnlyTxs.push(ltx);
               }
             }
-            this.transactions = unique;
-            saveTransactions(unique);
+
+            // Push pending local transactions to Firestore without data loss
+            if (localOnlyTxs.length > 0) {
+              for (const ltx of localOnlyTxs) {
+                cloudMap.set(ltx.id, ltx);
+                saveUserTransactionToFirestore(user.uid, ltx).catch(e => {
+                  console.warn('Sync-on-connect upload error:', e);
+                });
+              }
+            }
+
+            const merged = Array.from(cloudMap.values());
+            merged.sort((a, b) => b.createdAt - a.createdAt);
+            this.transactions = merged;
+            saveTransactions(merged);
             this.refreshUI();
           },
           (err) => {
@@ -846,6 +863,9 @@ class PulseBudgetApp {
 
     // Custom Categories in Limits modal
     this.setupAddCategoryEvents();
+
+    // Offline / Online Connectivity Sync
+    this.setupNetworkConnectivityEvents();
   }
 
   public switchPeriod(period: BudgetPeriod): void {
@@ -1546,6 +1566,43 @@ class PulseBudgetApp {
     this.updateActiveCategoryCapsCounter();
     this.refreshUI();
     playMarioJump();
+  }
+
+  private setupNetworkConnectivityEvents(): void {
+    window.addEventListener('online', () => {
+      this.showToast('📶 החיבור לרשת חזר – מסנכרן נתונים לענן...');
+      if (this.currentUser) {
+        this.syncLocalTransactionsToCloud();
+      }
+    });
+
+    window.addEventListener('offline', () => {
+      this.showToast('📴 עברת למצב לא מקוון (Offline). כל הנתונים נשמרים בבטחה.');
+    });
+  }
+
+  private async syncLocalTransactionsToCloud(): Promise<void> {
+    if (!this.currentUser) return;
+    const uid = this.currentUser.uid;
+    for (const tx of this.transactions) {
+      try {
+        await saveUserTransactionToFirestore(uid, tx);
+      } catch (e) {
+        console.warn('Sync on online error:', e);
+      }
+    }
+  }
+
+  private showToast(msg: string, durationMs: number = 3500): void {
+    if (!this.toastContainer) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.textContent = msg;
+    this.toastContainer.appendChild(toast);
+    setTimeout(() => {
+      toast.classList.add('fade-out');
+      setTimeout(() => toast.remove(), 400);
+    }, durationMs);
   }
 
   private openCapsSettingsModal(isMandatory: boolean = false): void {
