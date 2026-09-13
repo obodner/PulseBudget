@@ -1,6 +1,22 @@
 import { AppSettings, BudgetCaps, BudgetPeriod, BudgetStatus, DateRange, Transaction, TransactionType } from './types';
-import { CATEGORIES, getCategoryById } from './categories';
-import { DEFAULT_SETTINGS, clearLocalStorage, loadSettings, loadTransactions, saveSettings, saveTransactions } from './storage';
+import {
+  CATEGORIES,
+  getCategoryById,
+  getCustomCategories,
+  setCustomCategories,
+  addCustomCategory,
+  deleteCustomCategory
+} from './categories';
+import {
+  DEFAULT_SETTINGS,
+  clearLocalStorage,
+  loadSettings,
+  loadTransactions,
+  saveSettings,
+  saveTransactions,
+  loadStoredCustomCategories,
+  saveStoredCustomCategories
+} from './storage';
 import { ChartManager } from './chartManager';
 import {
   generatePulseNuggets,
@@ -24,7 +40,9 @@ import {
   saveUserCapsToFirestore,
   loadUserCapsFromFirestore,
   updateUserProfileName,
-  loadUserProfileNameFromFirestore
+  loadUserProfileNameFromFirestore,
+  saveUserCustomCategoriesToFirestore,
+  loadUserCustomCategoriesFromFirestore
 } from './firebase';
 import { User } from 'firebase/auth';
 
@@ -312,6 +330,19 @@ class PulseBudgetApp {
   private capsMandatoryNotice = document.getElementById('capsMandatoryNotice') as HTMLElement;
   private saveCapsBtn: HTMLButtonElement | null = null;
 
+  // Custom Category Elements in Caps Modal
+  private openAddCategoryBtn = document.getElementById('openAddCategoryBtn') as HTMLButtonElement | null;
+  private closeAddCategoryBtn = document.getElementById('closeAddCategoryBtn') as HTMLButtonElement | null;
+  private addCategoryPanel = document.getElementById('addCategoryPanel') as HTMLElement | null;
+  private newCatNameInput = document.getElementById('newCatNameInput') as HTMLInputElement | null;
+  private newCatCustomEmoji = document.getElementById('newCatCustomEmoji') as HTMLInputElement | null;
+  private catEmojiPickerGrid = document.getElementById('catEmojiPickerGrid') as HTMLElement | null;
+  private catColorPickerGrid = document.getElementById('catColorPickerGrid') as HTMLElement | null;
+  private confirmAddCategoryBtn = document.getElementById('confirmAddCategoryBtn') as HTMLButtonElement | null;
+  private cancelAddCategoryBtn = document.getElementById('cancelAddCategoryBtn') as HTMLButtonElement | null;
+  private selectedCatEmoji: string = '🎮';
+  private selectedCatColor: string = '#00F5D4';
+
   constructor() {
     const canvas = document.getElementById('budgetChart') as HTMLCanvasElement;
     this.chartManager = new ChartManager(canvas);
@@ -324,6 +355,10 @@ class PulseBudgetApp {
     this.settings = loadSettings();
     if (!this.settings.caps.categoryCaps) {
       this.settings.caps.categoryCaps = {};
+    }
+    const storedCustomCats = loadStoredCustomCategories();
+    if (storedCustomCats && storedCustomCats.length > 0) {
+      setCustomCategories(storedCustomCats);
     }
     this.hasConfiguredCaps = localStorage.getItem('pulse_caps_configured') === 'true';
     this.transactions = loadTransactions();
@@ -379,6 +414,15 @@ class PulseBudgetApp {
         if (this.dropdownUserName) this.dropdownUserName.textContent = displayName;
         if (this.dropdownUserEmail) this.dropdownUserEmail.textContent = user.email || '';
 
+        // Load user's cloud custom categories
+        const cloudCustomCats = await loadUserCustomCategoriesFromFirestore(user.uid);
+        if (cloudCustomCats && Array.isArray(cloudCustomCats) && cloudCustomCats.length > 0) {
+          setCustomCategories(cloudCustomCats);
+          saveStoredCustomCategories(cloudCustomCats);
+          this.populateCategoryOptions();
+          this.renderCategoryCapsInputs();
+        }
+
         // Load user's cloud budget caps
         const cloudCaps = await loadUserCapsFromFirestore(user.uid);
         const hasAnyCap = cloudCaps && (
@@ -427,6 +471,10 @@ class PulseBudgetApp {
         this.authBtn.classList.remove('active');
         if (this.authDropdownArrow) this.authDropdownArrow.style.display = 'none';
         this.closeUserDropdown();
+        const storedCustomCats = loadStoredCustomCategories();
+        setCustomCategories(storedCustomCats);
+        this.populateCategoryOptions();
+        this.renderCategoryCapsInputs();
         this.transactions = loadTransactions();
         this.refreshUI();
 
@@ -574,6 +622,9 @@ class PulseBudgetApp {
       playMarioJump();
       this.closeUserDropdown();
       clearLocalStorage();
+      setCustomCategories([]);
+      this.populateCategoryOptions();
+      this.renderCategoryCapsInputs();
       await logoutUser();
     });
 
@@ -792,6 +843,9 @@ class PulseBudgetApp {
 
     // Pulse Wrapped events (Phase 3)
     this.setupWrappedEvents();
+
+    // Custom Categories in Limits modal
+    this.setupAddCategoryEvents();
   }
 
   public switchPeriod(period: BudgetPeriod): void {
@@ -1155,6 +1209,7 @@ class PulseBudgetApp {
             <div class="category-cap-info">
               <span class="cat-cap-icon" style="background: ${cat.color}22; color: ${cat.color};">${cat.icon}</span>
               <span class="cat-cap-name">${cat.name}</span>
+              ${cat.isCustom ? `<button type="button" class="cat-delete-btn" data-delete-cat="${cat.id}" title="מחיקת קטגוריה">🗑️</button>` : ''}
             </div>
             <div class="category-cap-right">
               <span class="cat-status-badge empty" id="catBadge_${cat.id}">ללא הגבלה</span>
@@ -1204,6 +1259,18 @@ class PulseBudgetApp {
         const card = document.getElementById(`catCard_${catId}`);
         if (card) {
           card.classList.toggle('open');
+        }
+      });
+    });
+
+    // Attach delete listeners on custom category delete buttons
+    const deleteBtns = this.categoryCapsContainer.querySelectorAll<HTMLButtonElement>('.cat-delete-btn');
+    deleteBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const catId = btn.dataset.deleteCat;
+        if (catId) {
+          this.handleDeleteCustomCategory(catId);
         }
       });
     });
@@ -1283,7 +1350,206 @@ class PulseBudgetApp {
     this.categoryCapsActiveCount.textContent = `${activeCount} מוגדרות`;
   }
 
+  private setupAddCategoryEvents(): void {
+    if (!this.openAddCategoryBtn || !this.addCategoryPanel) return;
+
+    // Toggle add category panel
+    this.openAddCategoryBtn.addEventListener('click', () => {
+      const isVisible = this.addCategoryPanel!.style.display === 'block';
+      if (isVisible) {
+        this.closeAddCategoryPanel();
+      } else {
+        this.openAddCategoryPanel();
+      }
+    });
+
+    this.closeAddCategoryBtn?.addEventListener('click', () => {
+      this.closeAddCategoryPanel();
+    });
+
+    this.cancelAddCategoryBtn?.addEventListener('click', () => {
+      this.closeAddCategoryPanel();
+    });
+
+    // Emoji Picker Preset Buttons
+    const emojiBtns = this.catEmojiPickerGrid?.querySelectorAll<HTMLButtonElement>('.cat-emoji-btn');
+    emojiBtns?.forEach(btn => {
+      btn.addEventListener('click', () => {
+        emojiBtns.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        this.selectedCatEmoji = btn.dataset.emoji || '🎮';
+        if (this.newCatCustomEmoji) {
+          this.newCatCustomEmoji.value = '';
+        }
+      });
+    });
+
+    // Custom Emoji input
+    this.newCatCustomEmoji?.addEventListener('input', () => {
+      const val = this.newCatCustomEmoji?.value.trim();
+      if (val) {
+        emojiBtns?.forEach(b => b.classList.remove('selected'));
+        this.selectedCatEmoji = val;
+      }
+    });
+
+    // Color Picker Preset Buttons
+    const colorBtns = this.catColorPickerGrid?.querySelectorAll<HTMLButtonElement>('.cat-color-btn');
+    colorBtns?.forEach(btn => {
+      btn.addEventListener('click', () => {
+        colorBtns.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        this.selectedCatColor = btn.dataset.color || '#00F5D4';
+      });
+    });
+
+    // Confirm Add Category
+    this.confirmAddCategoryBtn?.addEventListener('click', () => {
+      this.handleAddCategoryConfirm();
+    });
+
+    // Enter key in newCatNameInput
+    this.newCatNameInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        this.handleAddCategoryConfirm();
+      }
+    });
+  }
+
+  private openAddCategoryPanel(): void {
+    if (!this.addCategoryPanel) return;
+    this.addCategoryPanel.style.display = 'block';
+    if (this.newCatNameInput) {
+      this.newCatNameInput.value = '';
+      this.newCatNameInput.classList.remove('input-error');
+      setTimeout(() => this.newCatNameInput?.focus(), 50);
+    }
+    if (this.newCatCustomEmoji) {
+      this.newCatCustomEmoji.value = '';
+    }
+    this.selectedCatEmoji = '🎮';
+    this.selectedCatColor = '#00F5D4';
+    const emojiBtns = this.catEmojiPickerGrid?.querySelectorAll<HTMLButtonElement>('.cat-emoji-btn');
+    emojiBtns?.forEach((b, i) => b.classList.toggle('selected', i === 0));
+    const colorBtns = this.catColorPickerGrid?.querySelectorAll<HTMLButtonElement>('.cat-color-btn');
+    colorBtns?.forEach((b, i) => b.classList.toggle('selected', i === 0));
+  }
+
+  private closeAddCategoryPanel(): void {
+    if (this.addCategoryPanel) {
+      this.addCategoryPanel.style.display = 'none';
+    }
+  }
+
+  private async handleAddCategoryConfirm(): Promise<void> {
+    const rawName = this.newCatNameInput?.value.trim() || '';
+    if (!rawName) {
+      if (this.newCatNameInput) {
+        this.newCatNameInput.focus();
+        this.newCatNameInput.classList.add('input-error');
+        setTimeout(() => this.newCatNameInput?.classList.remove('input-error'), 1500);
+      }
+      return;
+    }
+
+    // Check duplicate name
+    const existing = CATEGORIES.find(c => c.name.toLowerCase() === rawName.toLowerCase());
+    if (existing) {
+      alert(`הקטגוריה "${rawName}" כבר קיימת במערכת.`);
+      return;
+    }
+
+    const customEmoji = this.newCatCustomEmoji?.value.trim();
+    const finalEmoji = customEmoji || this.selectedCatEmoji || '✨';
+    const finalColor = this.selectedCatColor || '#00F5D4';
+    const newId = 'cust_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+
+    const created = addCustomCategory({
+      id: newId,
+      name: rawName,
+      icon: finalEmoji,
+      color: finalColor,
+      type: 'expense'
+    });
+
+    // Persist
+    saveStoredCustomCategories(getCustomCategories());
+    if (this.currentUser) {
+      await saveUserCustomCategoriesToFirestore(this.currentUser.uid, getCustomCategories());
+    }
+
+    // Update UI
+    this.populateCategoryOptions();
+    this.renderCategoryCapsInputs();
+    this.updateCategoryBoundsHints();
+    this.updateActiveCategoryCapsCounter();
+    this.closeAddCategoryPanel();
+    playMarioCoin();
+
+    // Auto-open new category card and focus daily input
+    setTimeout(() => {
+      const card = document.getElementById(`catCard_${created.id}`);
+      if (card) {
+        card.classList.add('open');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const dInp = document.getElementById(`catInput_daily_${created.id}`) as HTMLInputElement | null;
+        if (dInp) dInp.focus();
+      }
+    }, 100);
+  }
+
+  private async handleDeleteCustomCategory(catId: string): Promise<void> {
+    const cat = getCategoryById(catId);
+    if (!cat) return;
+
+    const txCount = this.transactions.filter(t => t.category === catId).length;
+    const confirmMsg = txCount > 0
+      ? `האם למחוק את הקטגוריה "${cat.name}"?\n\nקיימות ${txCount} תנועות המשויכות אליה, והן יועברו אוטומטית לקטגוריה "הוצאות שונות".`
+      : `האם אתה בטוח שברצונך למחוק את הקטגוריה "${cat.name}"?`;
+
+    if (!confirm(confirmMsg)) return;
+
+    // Migrate transactions if any
+    if (txCount > 0) {
+      for (const t of this.transactions) {
+        if (t.category === catId) {
+          t.category = 'other_exp';
+          if (this.currentUser) {
+            await saveUserTransactionToFirestore(this.currentUser.uid, t);
+          }
+        }
+      }
+      saveTransactions(this.transactions);
+    }
+
+    // Clean up category caps if exists
+    if (this.settings.caps.categoryCaps && this.settings.caps.categoryCaps[catId]) {
+      delete this.settings.caps.categoryCaps[catId];
+      saveSettings(this.settings);
+      if (this.currentUser) {
+        await saveUserCapsToFirestore(this.currentUser.uid, this.settings.caps);
+      }
+    }
+
+    // Delete custom category
+    deleteCustomCategory(catId);
+    saveStoredCustomCategories(getCustomCategories());
+    if (this.currentUser) {
+      await saveUserCustomCategoriesToFirestore(this.currentUser.uid, getCustomCategories());
+    }
+
+    // Re-render
+    this.populateCategoryOptions();
+    this.renderCategoryCapsInputs();
+    this.updateCategoryBoundsHints();
+    this.updateActiveCategoryCapsCounter();
+    this.refreshUI();
+    playMarioJump();
+  }
+
   private openCapsSettingsModal(isMandatory: boolean = false): void {
+    this.closeAddCategoryPanel();
     if (this.capsMandatoryNotice) {
       this.capsMandatoryNotice.style.display = isMandatory ? 'flex' : 'none';
     }
@@ -1347,6 +1613,7 @@ class PulseBudgetApp {
       this.inputDailyCap.focus();
       return;
     }
+    this.closeAddCategoryPanel();
     this.capsModal.classList.remove('open');
   }
 

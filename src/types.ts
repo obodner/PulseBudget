@@ -6,6 +6,7 @@ export interface CategoryInfo {
   icon: string;
   color: string;
   type: TransactionType;
+  isCustom?: boolean;
 }
 
 export interface Transaction {

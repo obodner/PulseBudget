@@ -642,6 +642,81 @@
             ניתן להגדיר תקרות לקטגוריות ספציפיות (מזון, תחבורה וכו'). תקרת קטגוריה לא יכולה לעלות על התקרה הכללית.
           </p>
 
+          <div class="caps-category-actions-bar">
+            <button type="button" id="openAddCategoryBtn" class="btn-add-category-trigger">
+              <span class="btn-add-icon">＋</span>
+              <span>הוספת קטגוריה חדשה</span>
+            </button>
+          </div>
+
+          <!-- Add New Category Collapsible Panel -->
+          <div id="addCategoryPanel" class="add-category-panel" style="display: none;">
+            <div class="add-cat-panel-header">
+              <div class="add-cat-title">
+                <span>✨</span>
+                <span>יצירת קטגוריית הוצאה חדשה</span>
+              </div>
+              <button type="button" id="closeAddCategoryBtn" class="add-cat-close-btn" aria-label="ביטול הוספת קטגוריה">✕</button>
+            </div>
+
+            <div class="add-cat-form-body">
+              <div class="form-group">
+                <label for="newCatNameInput" class="form-label">שם הקטגוריה:</label>
+                <input type="text" id="newCatNameInput" class="input-cyber" placeholder="לדוגמה: לימודים, גיימינג, חיות מחמד" maxlength="25" autocomplete="off" />
+              </div>
+
+              <!-- Emoji Presets & Custom Emoji -->
+              <div class="form-group">
+                <label class="form-label">בחר אימוג'י / סמל:</label>
+                <div class="cat-emoji-picker-grid" id="catEmojiPickerGrid">
+                  <button type="button" class="cat-emoji-btn selected" data-emoji="🎮">🎮</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="🐾">🐾</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="📚">📚</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="☕">☕</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="🎨">🎨</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="🎵">🎵</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="💻">💻</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="✈️">✈️</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="👶">👶</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="🏋️">🏋️</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="🌿">🌿</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="🎁">🎁</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="💄">💄</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="⚽">⚽</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="🍕">🍕</button>
+                  <button type="button" class="cat-emoji-btn" data-emoji="🏖️">🏖️</button>
+                </div>
+                <div class="cat-custom-emoji-row">
+                  <span class="custom-emoji-label">או אימוג'י אישי:</span>
+                  <input type="text" id="newCatCustomEmoji" class="input-cyber cat-custom-emoji-input" placeholder="✨" maxlength="4" />
+                </div>
+              </div>
+
+              <!-- Color Palette -->
+              <div class="form-group">
+                <label class="form-label">צבע זיהוי ניאון:</label>
+                <div class="cat-color-picker-grid" id="catColorPickerGrid">
+                  <button type="button" class="cat-color-btn selected" data-color="#00F5D4" style="background: #00F5D4;"></button>
+                  <button type="button" class="cat-color-btn" data-color="#10B981" style="background: #10B981;"></button>
+                  <button type="button" class="cat-color-btn" data-color="#38BDF8" style="background: #38BDF8;"></button>
+                  <button type="button" class="cat-color-btn" data-color="#EC4899" style="background: #EC4899;"></button>
+                  <button type="button" class="cat-color-btn" data-color="#A855F7" style="background: #A855F7;"></button>
+                  <button type="button" class="cat-color-btn" data-color="#F59E0B" style="background: #F59E0B;"></button>
+                  <button type="button" class="cat-color-btn" data-color="#EF4444" style="background: #EF4444;"></button>
+                  <button type="button" class="cat-color-btn" data-color="#6366F1" style="background: #6366F1;"></button>
+                </div>
+              </div>
+
+              <div class="add-cat-actions">
+                <button type="button" id="confirmAddCategoryBtn" class="btn-pill btn-pill-primary">
+                  <span>צור קטגוריה</span>
+                  <span>✓</span>
+                </button>
+                <button type="button" id="cancelAddCategoryBtn" class="btn-secondary">ביטול</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Dynamic container for category cards -->
           <div id="categoryCapsContainer" class="category-caps-container">
             <!-- Dynamically populated by JS -->

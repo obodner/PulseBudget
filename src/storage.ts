@@ -40,6 +40,7 @@ export function clearLocalStorage(): void {
     localStorage.removeItem(TRANSACTIONS_KEY);
     localStorage.removeItem(SETTINGS_KEY);
     localStorage.removeItem('pulse_caps_configured');
+    localStorage.removeItem(CUSTOM_CATEGORIES_KEY);
   } catch (e) {
     console.error('Failed to clear storage:', e);
   }
@@ -152,3 +153,24 @@ export function generateDemoData(): Transaction[] {
 
   return list.sort((a, b) => b.createdAt - a.createdAt);
 }
+
+const CUSTOM_CATEGORIES_KEY = 'pulse_custom_categories_v1';
+
+export function loadStoredCustomCategories(): any[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_CATEGORIES_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function saveStoredCustomCategories(cats: any[]): void {
+  try {
+    localStorage.setItem(CUSTOM_CATEGORIES_KEY, JSON.stringify(cats));
+  } catch (e) {
+    console.error('Failed to save custom categories:', e);
+  }
+}
+

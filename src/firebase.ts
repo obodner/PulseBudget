@@ -216,3 +216,30 @@ export async function loadUserProfileNameFromFirestore(userId: string): Promise<
   return null;
 }
 
+// Custom Categories Firestore Sync
+export async function saveUserCustomCategoriesToFirestore(userId: string, categories: any[]): Promise<void> {
+  try {
+    const docRef = doc(db, 'users', userId, 'settings', 'customCategories');
+    await setDoc(docRef, { categories }, { merge: true });
+  } catch (e) {
+    console.warn('Failed to save custom categories to Firestore:', e);
+  }
+}
+
+export async function loadUserCustomCategoriesFromFirestore(userId: string): Promise<any[] | null> {
+  try {
+    const docRef = doc(db, 'users', userId, 'settings', 'customCategories');
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (Array.isArray(data.categories)) {
+        return data.categories;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load custom categories from Firestore:', e);
+  }
+  return null;
+}
+
+

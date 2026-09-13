@@ -2176,6 +2176,205 @@ body {
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
 }
 
+/* Custom Category Creation & Management UI */
+.caps-category-actions-bar {
+  display: flex;
+  margin-bottom: 0.85rem;
+}
+
+.btn-add-category-trigger {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: rgba(0, 245, 212, 0.05);
+  border: 1px dashed rgba(0, 245, 212, 0.4);
+  border-radius: var(--radius-sm);
+  color: var(--neon-cyan);
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-add-category-trigger:hover {
+  background: rgba(0, 245, 212, 0.12);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 16px var(--neon-cyan-glow);
+  transform: translateY(-1px);
+}
+
+.btn-add-icon {
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.add-category-panel {
+  background: rgba(18, 26, 44, 0.95);
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 245, 212, 0.1);
+  border-radius: var(--radius-md);
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1rem;
+  animation: panelSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes panelSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.add-cat-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.95rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.add-cat-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.add-cat-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.add-cat-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.add-cat-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.cat-emoji-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.cat-emoji-btn {
+  font-size: 1.35rem;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cat-emoji-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.1);
+}
+
+.cat-emoji-btn.selected {
+  background: rgba(0, 245, 212, 0.2);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 12px var(--neon-cyan-glow);
+  transform: scale(1.08);
+}
+
+.cat-custom-emoji-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.45rem;
+}
+
+.custom-emoji-label {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.cat-custom-emoji-input {
+  width: 60px !important;
+  text-align: center;
+  font-size: 1.1rem;
+  padding: 0.3rem !important;
+}
+
+.cat-color-picker-grid {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+}
+
+.cat-color-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.cat-color-btn:hover {
+  transform: scale(1.15);
+}
+
+.cat-color-btn.selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 14px currentColor, 0 0 6px #ffffff;
+  transform: scale(1.2);
+}
+
+.add-cat-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.add-cat-actions button {
+  min-height: 38px;
+}
+
+.cat-delete-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.95rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  color: var(--text-dim);
+}
+
+.cat-delete-btn:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.18);
+  transform: scale(1.15);
+}
+
+
 /* Toast Notification System */
 .toast-container {
   position: fixed;
